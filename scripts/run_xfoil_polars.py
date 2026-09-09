@@ -12,6 +12,9 @@ from aurora_he1.polars import read_xfoil_polar, write_polar_csv
 
 
 def xfoil_input(airfoil_path: Path, polar_path: Path, reynolds: int, cfg: dict) -> str:
+    alpha_start = float(cfg["alpha_start_deg"])
+    alpha_end = float(cfg["alpha_end_deg"])
+    alpha_step = abs(float(cfg["alpha_step_deg"]))
     return f"""PLOP
 G F
 
@@ -26,7 +29,11 @@ N {float(cfg['ncrit'])}
 PACC
 {polar_path}
 
-ASEQ {float(cfg['alpha_start_deg'])} {float(cfg['alpha_end_deg'])} {float(cfg['alpha_step_deg'])}
+ALFA 0.0
+ASEQ {alpha_step} {alpha_end} {alpha_step}
+INIT
+ALFA 0.0
+ASEQ {-alpha_step} {alpha_start} {-alpha_step}
 PACC
 
 QUIT
