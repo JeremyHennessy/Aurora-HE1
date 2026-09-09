@@ -41,6 +41,10 @@ jobs:
           )
           curl --fail --location --retry 5 --retry-delay 3 --output /tmp/openvsp.deb "$URL"
           sudo apt-get update
+          # The official OpenVSP 3.51.3 .deb post-install script invokes
+          # desktop-file-install but does not declare desktop-file-utils as a
+          # package dependency. Install it explicitly on headless CI runners.
+          sudo apt-get install -y desktop-file-utils
           sudo apt-get install -y /tmp/openvsp.deb
           VSP_SCRIPT=$(command -v vspscript || true)
           if [ -z "$VSP_SCRIPT" ]; then
