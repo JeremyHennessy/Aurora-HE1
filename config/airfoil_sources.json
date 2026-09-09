@@ -2,18 +2,19 @@
   "source_authority": "MIT Mark Drela Human Powered Aircraft airfoil archive",
   "source_index": "https://web.mit.edu/drela/Public/web/hpa/airfoils/",
   "airfoils": {
-    "dae11": {"url": "https://web.mit.edu/drela/Public/web/hpa/airfoils/dae11.dat", "original_design_re": 500000, "role": "wing inner / center reference", "expected_sha256": "e58561877ba871a141fbf3b5cbb8022ded64648209114f6322833b70b2ab542f"},
-    "dae21": {"url": "https://web.mit.edu/drela/Public/web/hpa/airfoils/dae21.dat", "original_design_re": 375000, "role": "wing mid reference", "expected_sha256": "4bab3039e607fecb92972251225297a001dcefefbbea847e7afe23c7a3c6d27e"},
-    "dae31": {"url": "https://web.mit.edu/drela/Public/web/hpa/airfoils/dae31.dat", "original_design_re": 250000, "role": "wing outer reference", "expected_sha256": "db4c14a426d88e284db32c4579f7ce813c9078679c4ece1cbdb652e625ff3cba"},
-    "dae41": {"url": "https://web.mit.edu/drela/Public/web/hpa/airfoils/dae41.dat", "original_design_re": 150000, "role": "wingtip reference", "expected_sha256": "257e87fed1650e84c87f7192470d0ae4ca1c0148dafcc5af30f30baca1c10fd4"},
-    "dae51": {"url": "https://web.mit.edu/drela/Public/web/hpa/airfoils/dae51.dat", "original_design_re": 150000, "role": "propeller reference", "expected_sha256": "d773e61b571a62d032cec92dd05d853d1cb2a1f6311ccc8180b3b9169c68b371"}
+    "dae11": {"url": "https://web.mit.edu/drela/Public/web/hpa/airfoils/dae11.dat", "original_design_re": 500000, "analysis_reynolds": [500000, 600000, 700000], "role": "wing inner / center reference", "expected_sha256": "e58561877ba871a141fbf3b5cbb8022ded64648209114f6322833b70b2ab542f"},
+    "dae21": {"url": "https://web.mit.edu/drela/Public/web/hpa/airfoils/dae21.dat", "original_design_re": 375000, "analysis_reynolds": [350000, 450000, 500000, 600000], "role": "wing mid reference", "expected_sha256": "4bab3039e607fecb92972251225297a001dcefefbbea847e7afe23c7a3c6d27e"},
+    "dae31": {"url": "https://web.mit.edu/drela/Public/web/hpa/airfoils/dae31.dat", "original_design_re": 250000, "analysis_reynolds": [250000, 350000, 425000, 500000], "role": "wing outer reference", "expected_sha256": "db4c14a426d88e284db32c4579f7ce813c9078679c4ece1cbdb652e625ff3cba"},
+    "dae41": {"url": "https://web.mit.edu/drela/Public/web/hpa/airfoils/dae41.dat", "original_design_re": 150000, "analysis_reynolds": [200000, 250000, 330000, 400000], "role": "wingtip reference", "expected_sha256": "257e87fed1650e84c87f7192470d0ae4ca1c0148dafcc5af30f30baca1c10fd4"},
+    "dae51": {"url": "https://web.mit.edu/drela/Public/web/hpa/airfoils/dae51.dat", "original_design_re": 150000, "analysis_reynolds": [75000, 100000, 150000, 200000, 250000, 300000, 400000], "role": "propeller reference", "expected_sha256": "d773e61b571a62d032cec92dd05d853d1cb2a1f6311ccc8180b3b9169c68b371"}
   },
   "xfoil": {
-    "wing_reynolds": [150000, 250000, 350000, 500000, 700000],
-    "propeller_reynolds": [75000, 100000, 150000, 200000, 250000, 300000, 400000],
     "alpha_start_deg": -4.0,
     "alpha_end_deg": 10.0,
     "alpha_step_deg": 0.5,
+    "required_alpha_min_deg": -2.0,
+    "required_alpha_max_deg": 7.0,
+    "minimum_converged_points": 12,
     "ncrit": 9.0,
     "iteration_limit": 250
   }
