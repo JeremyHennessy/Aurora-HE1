@@ -1,0 +1,71 @@
+name: Deploy engineering viewer
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'viewer/**'
+      - 'scripts/check_viewer_snapshot.py'
+      - '.github/workflows/pages-viewer.yml'
+  pull_request:
+    paths:
+      - 'viewer/**'
+      - 'scripts/check_viewer_snapshot.py'
+      - '.github/workflows/pages-viewer.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - name: Validate viewer engineering snapshot
+        run: python scripts/check_viewer_snapshot.py
+      - name: Validate publishable viewer tree
+        run: |
+          test -s viewer/index.html
+          test -s viewer/data/verified_snapshot.json
+
+  build:
+    if: github.event_name != 'pull_request'
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Prepare static Pages artifact
+        run: |
+          rm -rf _site
+          mkdir _site
+          cp -a viewer/. _site/
+          touch _site/.nojekyll
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: build
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
