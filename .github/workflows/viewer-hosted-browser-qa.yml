@@ -1,0 +1,57 @@
+name: Hosted viewer browser QA
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/qa_viewer_playwright.mjs'
+      - '.github/workflows/viewer-hosted-browser-qa.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/qa_viewer_playwright.mjs'
+      - '.github/workflows/viewer-hosted-browser-qa.yml'
+  workflow_run:
+    workflows: ['Deploy engineering viewer']
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - name: Check browser QA script syntax
+        run: node --check scripts/qa_viewer_playwright.mjs
+
+  hosted-browser:
+    if: github.event_name != 'pull_request' && (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - name: Install pinned Playwright
+        run: |
+          npm install --no-save --ignore-scripts playwright@1.63.0
+          npx playwright install --with-deps chromium
+      - name: Exercise hosted engineering viewer
+        env:
+          PAGE_URL: https://jeremyhennessy.github.io/Aurora-HE1/
+        run: node scripts/qa_viewer_playwright.mjs
+      - name: Preserve browser QA screenshots and diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hosted-viewer-browser-qa
+          path: qa-artifacts/viewer
+          if-no-files-found: warn
+          retention-days: 30
