@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import json
-import math
 from pathlib import Path
 
 from aurora_he1.geometry import chord_at_eta, solve_trapezoidal_wing
@@ -55,12 +54,13 @@ def main() -> None:
     out.mkdir(parents=True, exist_ok=True)
     (out / "geometry_manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
 
-    # VSPAERO's vortex-lattice stage is deliberately configured with symmetric thin
-    # sections. Phase 2 owns viscous DAE section physics; Phase 3A isolates 3-D lift
-    # distribution and induced drag so those two evidence layers are not double-counted.
     twists = [stations[i]["twist_deg"] for i in range(1, len(stations))]
     chords = [s["chord_m"] for s in stations]
     a = cfg["analysis"]
+    # APIDefines assigns VSPAERO VORTEX_LATTICE = 0. OpenVSP 3.51.3's
+    # AngelScript binding does not export the enum symbol itself, so the
+    # generated script uses the documented integer value and immediately
+    # reads it back from Analysis Manager as an execution-time guard.
     lines = [
         "void main()",
         "{",
@@ -111,14 +111,18 @@ def main() -> None:
         '    Print(GetParmVal(wing_id, "Tip_Chord", "XSec_4"));',
         '    string cg_name = "VSPAEROComputeGeometry";',
         '    SetAnalysisInputDefaults(cg_name);',
-        '    array<int> method(1, VSPAERO_ANALYSIS_METHOD::VORTEX_LATTICE);',
+        '    array<int> method(1, 0);',
         '    SetIntAnalysisInput(cg_name, "AnalysisMethod", method);',
+        '    array<int> confirm_method = GetIntAnalysisInput(cg_name, "AnalysisMethod");',
+        '    if (confirm_method.size() == 0 || confirm_method[0] != 0) { Print("PHASE3A_ERROR|VLM method assignment failed"); return; }',
         '    array<int> geomset(1, SET_ALL); SetIntAnalysisInput(cg_name, "GeomSet", geomset);',
         '    string cg_res = ExecAnalysis(cg_name);',
         '    if (cg_res.length() == 0) { Print("PHASE3A_ERROR|VSPAEROComputeGeometry returned no result"); return; }',
         '    string analysis_name = "VSPAEROSweep";',
         '    SetAnalysisInputDefaults(analysis_name);',
         '    SetIntAnalysisInput(analysis_name, "AnalysisMethod", method);',
+        '    array<int> confirm_sweep_method = GetIntAnalysisInput(analysis_name, "AnalysisMethod");',
+        '    if (confirm_sweep_method.size() == 0 || confirm_sweep_method[0] != 0) { Print("PHASE3A_ERROR|VLM sweep method assignment failed"); return; }',
         '    SetIntAnalysisInput(analysis_name, "GeomSet", geomset);',
         '    array<int> ref_flag(1, 1); SetIntAnalysisInput(analysis_name, "RefFlag", ref_flag);',
         '    array<string> wing_ids(1, wing_id); SetStringAnalysisInput(analysis_name, "WingID", wing_ids);',
@@ -132,6 +136,7 @@ def main() -> None:
         '    string sweep_res = ExecAnalysis(analysis_name);',
         '    if (sweep_res.length() == 0) { Print("PHASE3A_ERROR|VSPAEROSweep returned no result"); return; }',
         '    string hist = FindLatestResultsID("VSPAERO_History");',
+        '    if (hist.length() == 0) { Print("PHASE3A_ERROR|VSPAERO_History missing"); return; }',
         '    array<double> al = GetDoubleResults(hist, "Alpha", 0);',
         '    array<double> cl = GetDoubleResults(hist, "CL", 0);',
         '    array<double> cdi = GetDoubleResults(hist, "CDi", 0);',
