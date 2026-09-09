@@ -1,0 +1,35 @@
+{
+  "status": "PHASE 3A COMPUTATIONAL WHOLE-WING ANALYSIS / NOT FOR CONSTRUCTION OR FLIGHT CLEARANCE",
+  "toolchain": {
+    "openvsp_version": "3.51.3",
+    "platform": "Ubuntu-24.04_amd64",
+    "package_url": "https://openvsp.org/zips/current/linux/OpenVSP-3.51.3-Ubuntu-24.04_amd64.deb"
+  },
+  "scope": {
+    "authoritative_geometry": ["main_wing_planform", "main_wing_dihedral", "main_wing_incidence", "main_wing_station_twist", "DAE station airfoils where explicitly resolved"],
+    "excluded_from_authoritative_model": ["fuselage_aerodynamic_shell", "horizontal_tail_planform", "vertical_tail_planform", "control_surface_geometry", "propeller_slipstream", "landing_gear_drag"],
+    "reason": "Those geometries are not yet fully specified in config/he1_baseline.json. Phase 3A must not invent them to produce apparently precise stability numbers."
+  },
+  "wing_station_eta": [0.0, 0.25, 0.5, 0.75, 1.0],
+  "analysis": {
+    "method": "VORTEX_LATTICE",
+    "mach": 0.03,
+    "alpha_start_deg": -4.0,
+    "alpha_end_deg": 8.0,
+    "alpha_points": 13,
+    "reference_speed_m_s": 9.5,
+    "reference_density_kg_m3": 1.225,
+    "comparison_alpha_deg": 4.0
+  },
+  "validation": {
+    "geometry_relative_tolerance": 0.002,
+    "induced_drag_relative_tolerance_vs_elliptic_estimate": 0.30,
+    "require_positive_lift_curve_slope": true,
+    "require_monotonic_cl_over_core_alpha_range": true
+  },
+  "boundary": [
+    "Phase 3A is a main-wing-only VSPAERO/VLM validation stage.",
+    "It does not establish aircraft neutral point, static margin, trim, control authority, fuselage drag, tail effectiveness, or flight safety.",
+    "Those require an explicitly resolved tail/fuselage/control geometry before Phase 3B."
+  ]
+}
