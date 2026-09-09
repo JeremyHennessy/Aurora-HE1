@@ -6,11 +6,13 @@ on:
     paths:
       - 'viewer/**'
       - 'scripts/check_viewer_snapshot.py'
+      - 'scripts/check_sandbox_model.py'
       - '.github/workflows/pages-viewer.yml'
   pull_request:
     paths:
       - 'viewer/**'
       - 'scripts/check_viewer_snapshot.py'
+      - 'scripts/check_sandbox_model.py'
       - '.github/workflows/pages-viewer.yml'
   workflow_dispatch:
 
@@ -31,10 +33,14 @@ jobs:
           python-version: '3.13'
       - name: Validate viewer engineering snapshot
         run: python scripts/check_viewer_snapshot.py
+      - name: Validate scenario sandbox model
+        run: python scripts/check_sandbox_model.py
       - name: Validate publishable viewer tree
         run: |
           test -s viewer/index.html
+          test -s viewer/sandbox.html
           test -s viewer/data/verified_snapshot.json
+          test -s viewer/data/sandbox_model.json
 
   build:
     if: github.event_name != 'pull_request'
@@ -109,4 +115,26 @@ jobs:
           print(f'baseline: {actual}')
           print(f'Phase 2B points: {len(data["phase2b"]["operating_envelope"])}')
           print(f'XFOIL cases: {len(data["airfoils"]["summary"])}')
+          PY
+      - name: Verify served scenario sandbox
+        env:
+          PAGE_URL: ${{ needs.deploy.outputs.page_url }}
+        run: |
+          curl --fail --location --retry 8 --retry-delay 3 --retry-all-errors \
+            --output /tmp/sandbox.html "${PAGE_URL%/}/sandbox.html"
+          grep -q '<title>Aurora HE-1 Scenario Sandbox</title>' /tmp/sandbox.html
+          grep -q 'UNVERIFIED SCENARIO' /tmp/sandbox.html
+          curl --fail --location --retry 8 --retry-delay 3 --retry-all-errors \
+            --output /tmp/sandbox_model.json "${PAGE_URL%/}/data/sandbox_model.json"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          data = json.loads(Path('/tmp/sandbox_model.json').read_text())
+          if data['meta']['source_main_commit'] != '1a244282d3fc6b84ee9df5c62ee32efe3c03ec24':
+              raise SystemExit('hosted sandbox model source checkpoint mismatch')
+          if data['defaults']['prop_configuration_id'] != 'phase2_reference':
+              raise SystemExit('hosted sandbox default prop configuration changed')
+          if len(data['propulsion']['configurations']) != 3:
+              raise SystemExit('hosted sandbox propeller reference set incomplete')
+          print('HOSTED SANDBOX VERIFIED')
           PY
