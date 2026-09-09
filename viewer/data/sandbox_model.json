@@ -1,0 +1,125 @@
+{
+  "meta": {
+    "name": "Aurora HE-1 Scenario Sandbox Model",
+    "status": "UNVERIFIED SCENARIO MODEL / READ-ONLY / NOT FOR CONSTRUCTION OR FLIGHT CLEARANCE",
+    "source_main_commit": "1a244282d3fc6b84ee9df5c62ee32efe3c03ec24",
+    "equation_sources": [
+      "src/aurora_he1/aero.py",
+      "src/aurora_he1/propulsion.py",
+      "src/aurora_he1/model.py"
+    ],
+    "baseline_sources": [
+      "config/he1_baseline.json",
+      "outputs/design_summary.json",
+      "viewer/data/verified_snapshot.json"
+    ]
+  },
+  "environment": {
+    "density_kg_m3": 1.225,
+    "gravity_m_s2": 9.80665,
+    "speed_of_sound_m_s": 340.3
+  },
+  "wing": {
+    "span_m": 23.0,
+    "area_m2": 18.0,
+    "aspect_ratio": 29.38888888888889,
+    "mean_aerodynamic_chord_m": 0.8148124622860229,
+    "root_le_x_m": 2.7
+  },
+  "aero": {
+    "oswald_efficiency": 0.92,
+    "cd0": 0.018,
+    "cl_max_clean": 1.6
+  },
+  "propulsion": {
+    "final_drive_efficiency": 0.96,
+    "motor_controller_efficiency": 0.82,
+    "default_human_input_w": 130.0,
+    "default_boost_battery_input_w": 500.0,
+    "default_usable_battery_wh": 374.4,
+    "configurations": [
+      {
+        "id": "phase2_reference",
+        "label": "Phase 2 reference · 2.85 m / 130 rpm",
+        "diameter_m": 2.85,
+        "rpm": 130.0,
+        "propulsive_efficiency": 0.9036882258163265,
+        "efficiency_basis": "Frozen at the validated 9.5 m/s Phase 2 DAE51/XFOIL+BEM reference value; not recomputed when sandbox inputs change.",
+        "ground_clearance_m": 0.32499999999999996
+      },
+      {
+        "id": "phase2b_candidate",
+        "label": "Phase 2B numerical candidate · 2.90 m / 150 rpm",
+        "diameter_m": 2.9,
+        "rpm": 150.0,
+        "propulsive_efficiency": 0.9079090731836813,
+        "efficiency_basis": "Frozen at the 9.5 m/s Phase 2B candidate design-point value; candidate is not promoted to baseline.",
+        "ground_clearance_m": 0.30000000000000004
+      },
+      {
+        "id": "phase1_assumption",
+        "label": "Phase 1 analytical assumption · 88%",
+        "diameter_m": 2.85,
+        "rpm": 130.0,
+        "propulsive_efficiency": 0.88,
+        "efficiency_basis": "Original analytical engineering assumption retained only for comparison.",
+        "ground_clearance_m": 0.32499999999999996
+      }
+    ]
+  },
+  "mass": {
+    "empty_mass_kg": 37.5,
+    "empty_cg_x_m": 2.9947999999999997,
+    "reference_pilot_and_gear_kg": 72.5,
+    "reference_pilot_cg_x_m": 2.83,
+    "target_cg_fraction_mac": 0.23,
+    "provisional_cg_range_fraction_mac": [0.18, 0.28]
+  },
+  "defaults": {
+    "pilot_and_gear_kg": 72.5,
+    "pilot_cg_x_m": 2.83,
+    "extra_mass_kg": 0.0,
+    "extra_mass_x_m": 2.75,
+    "speed_m_s": 9.5,
+    "human_input_w": 130.0,
+    "boost_battery_input_w": 500.0,
+    "usable_battery_wh": 374.4,
+    "prop_configuration_id": "phase2_reference"
+  },
+  "reference_results": {
+    "gross_mass_kg": 110.0,
+    "gross_cg_x_m": 2.8861818181818184,
+    "gross_cg_fraction_mac": 0.22849652748249571,
+    "stall_speed_m_s": 7.820011468347048,
+    "drag_n": 31.678403795637138,
+    "lift_to_drag": 34.05258380311973,
+    "aerodynamic_power_w": 300.9448360585528,
+    "prop_shaft_required_w": 333.0184320889,
+    "battery_input_w": 264.50512206415146,
+    "battery_endurance_h": 1.4154735344187224,
+    "still_air_range_km": 48.409194877120306,
+    "boost_climb_m_s": 0.15530012816408048,
+    "boost_climb_ft_min": 30.57089141734974
+  },
+  "scenario_limits": {
+    "pilot_and_gear_kg": [45.0, 110.0],
+    "pilot_cg_x_m": [2.55, 3.1],
+    "extra_mass_kg": [0.0, 25.0],
+    "extra_mass_x_m": [0.5, 8.5],
+    "speed_m_s": [7.5, 12.0],
+    "human_input_w": [0.0, 250.0],
+    "boost_battery_input_w": [0.0, 1000.0],
+    "usable_battery_wh": [150.0, 900.0]
+  },
+  "interpretation": {
+    "phase2b_verified_speed_envelope_m_s": [8.0, 11.0],
+    "warnings": [
+      "All changed-input results are UNVERIFIED SCENARIOS.",
+      "Propulsive efficiency is frozen at the selected reference design-point value and is not a new BEM solve.",
+      "Changing battery energy does not automatically change mass; use Extra mass to represent added battery or payload mass.",
+      "Aerodynamic coefficients retain the baseline analytical CD0, Oswald efficiency and CLmax assumptions.",
+      "Climb remains an energy-method estimate, not a flight-dynamics or certification result.",
+      "No structural, aeroelastic, control, gust, takeoff, landing or static-thrust validation is performed in-browser."
+    ]
+  }
+}
