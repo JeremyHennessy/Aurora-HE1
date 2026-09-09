@@ -4,6 +4,7 @@ import path from 'node:path';
 import { chromium } from 'playwright';
 
 const pageUrl = process.env.PAGE_URL || 'https://jeremyhennessy.github.io/Aurora-HE1/';
+const sandboxUrl = `${pageUrl.replace(/\/$/, '')}/sandbox.html`;
 const outputDir = process.env.QA_OUTPUT_DIR || 'qa-artifacts/viewer';
 fs.mkdirSync(outputDir, { recursive: true });
 
@@ -54,6 +55,28 @@ async function assertViewerLoaded(page, label) {
   }
 }
 
+async function assertSandboxLoaded(page, label) {
+  const response = await page.goto(sandboxUrl, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+  if (!response || !response.ok()) {
+    throw new Error(`${label}: sandbox navigation failed with HTTP ${response?.status() ?? 'no response'}`);
+  }
+  await page.waitForFunction(() => document.querySelectorAll('#metrics .metric').length === 8, null, { timeout: 30_000 });
+  await page.waitForFunction(() => document.querySelectorAll('#propConfig option').length === 3, null, { timeout: 30_000 });
+  const state = await page.evaluate(() => ({
+    title: document.title,
+    warning: document.body.innerText.includes('UNVERIFIED SCENARIO'),
+    metrics: document.querySelector('#metrics')?.innerText || '',
+    speed: document.querySelector('#speedV')?.textContent || '',
+    prop: document.querySelector('#propConfig')?.value || '',
+  }));
+  if (state.title !== 'Aurora HE-1 Scenario Sandbox') throw new Error(`${label}: unexpected sandbox title ${state.title}`);
+  if (!state.warning) throw new Error(`${label}: sandbox lacks UNVERIFIED SCENARIO warning`);
+  if (!state.metrics.includes('110.0 kg')) throw new Error(`${label}: sandbox default gross mass does not reproduce 110 kg reference: ${state.metrics}`);
+  if (!state.metrics.includes('333 W')) throw new Error(`${label}: sandbox default shaft requirement does not reproduce Phase 2 reference: ${state.metrics}`);
+  if (!state.speed.includes('9.5 m/s')) throw new Error(`${label}: sandbox default speed mismatch: ${state.speed}`);
+  if (state.prop !== 'phase2_reference') throw new Error(`${label}: sandbox default prop reference mismatch: ${state.prop}`);
+}
+
 async function captureTabs(page, prefix, tabs) {
   for (const tab of tabs) {
     await page.locator(`.tab[data-tab="${tab}"]`).click();
@@ -79,6 +102,18 @@ try {
     throw new Error(`desktop: speed slider did not expose verified 11 m/s point: ${highSpeedStats}`);
   }
   await desktopPage.screenshot({ path: path.join(outputDir, 'desktop-prop-11ms.png'), fullPage: true });
+
+  await assertSandboxLoaded(desktopPage, 'desktop-sandbox');
+  await desktopPage.screenshot({ path: path.join(outputDir, 'desktop-sandbox-reference.png'), fullPage: true });
+  await desktopPage.locator('#lightPilot').click();
+  await desktopPage.waitForTimeout(250);
+  const lightMetrics = await desktopPage.locator('#metrics').innerText();
+  if (!lightMetrics.includes('97.5 kg')) throw new Error(`desktop-sandbox: light-pilot scenario did not recompute gross mass: ${lightMetrics}`);
+  await desktopPage.screenshot({ path: path.join(outputDir, 'desktop-sandbox-light-pilot.png'), fullPage: true });
+  await desktopPage.locator('#reset').click();
+  await desktopPage.waitForTimeout(150);
+  const resetMetrics = await desktopPage.locator('#metrics').innerText();
+  if (!resetMetrics.includes('110.0 kg')) throw new Error(`desktop-sandbox: reset did not restore Phase 2 reference: ${resetMetrics}`);
   await desktop.close();
 
   const mobile = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
@@ -86,6 +121,8 @@ try {
   attachDiagnostics(mobilePage, 'mobile');
   await assertViewerLoaded(mobilePage, 'mobile');
   await captureTabs(mobilePage, 'mobile', ['overview', 'prop']);
+  await assertSandboxLoaded(mobilePage, 'mobile-sandbox');
+  await mobilePage.screenshot({ path: path.join(outputDir, 'mobile-sandbox-reference.png'), fullPage: true });
   await mobile.close();
 } finally {
   await browser.close();
@@ -93,6 +130,7 @@ try {
 
 const diagnostic = {
   pageUrl,
+  sandboxUrl,
   consoleErrors,
   pageErrors,
   requestFailures,
@@ -107,4 +145,5 @@ if (consoleErrors.length || pageErrors.length || requestFailures.length) {
 
 console.log('HOSTED BROWSER QA PASSED');
 console.log(`screenshots: ${diagnostic.screenshots.length}`);
-console.log(`page: ${pageUrl}`);
+console.log(`viewer: ${pageUrl}`);
+console.log(`sandbox: ${sandboxUrl}`);
