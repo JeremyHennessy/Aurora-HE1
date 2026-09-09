@@ -1,0 +1,55 @@
+name: Phase 2C transition sensitivity
+
+on:
+  pull_request:
+    paths:
+      - 'config/phase2c_transition_sensitivity.json'
+      - 'scripts/run_xfoil_transition_sensitivity.mjs'
+      - 'scripts/run_transition_bem_sensitivity.py'
+      - 'scripts/check_phase2c.py'
+      - '.github/workflows/phase2c-transition-sensitivity.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  transition-sensitivity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - name: Check Phase 2C script syntax
+        run: |
+          node --check scripts/run_xfoil_transition_sensitivity.mjs
+          python -m py_compile scripts/run_transition_bem_sensitivity.py scripts/check_phase2c.py
+          python -m json.tool config/phase2c_transition_sensitivity.json >/dev/null
+      - name: Install pinned headless XFOIL 6.996 wrapper
+        run: |
+          npm install --no-save --ignore-scripts webxfoil-wasm@0.1.1
+          grep -q '5b6363ce4f32062838f5fe910ab924883c05dd7f408454655af6b9a844611120' node_modules/webxfoil-wasm/SOURCES.md
+      - name: Fetch authoritative MIT DAE coordinates
+        run: python scripts/fetch_mit_airfoils.py
+      - name: Generate DAE51 transition sensitivity polars
+        run: node scripts/run_xfoil_transition_sensitivity.mjs
+      - name: Propagate through fixed Phase 2 blade
+        env:
+          PYTHONPATH: src
+        run: python scripts/run_transition_bem_sensitivity.py
+      - name: Validate Phase 2C engineering boundaries
+        run: python scripts/check_phase2c.py
+      - name: Preserve Phase 2C evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase2c-transition-sensitivity
+          path: |
+            analysis/phase2c/transition_bem_summary.json
+            analysis/phase2c/polars/summary.json
+            analysis/phase2c/polars/**/*.csv
+          retention-days: 30
