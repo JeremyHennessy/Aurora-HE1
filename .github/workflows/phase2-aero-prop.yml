@@ -13,17 +13,17 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Install XFOIL
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned headless XFOIL 6.996 wrapper
         run: |
-          sudo apt-get update
-          sudo apt-get install -y xfoil
-          command -v xfoil
+          npm install --no-save --ignore-scripts webxfoil-wasm@0.1.1
+          grep -q '5b6363ce4f32062838f5fe910ab924883c05dd7f408454655af6b9a844611120' node_modules/webxfoil-wasm/SOURCES.md
       - name: Fetch authoritative MIT DAE coordinates
         run: python scripts/fetch_mit_airfoils.py
-      - name: Generate viscous XFOIL polars
-        env:
-          PYTHONPATH: src
-        run: python scripts/run_xfoil_polars.py
+      - name: Generate viscous XFOIL 6.996 polars
+        run: node scripts/run_xfoil_polars.mjs
       - name: Run DAE51 propeller BEM trade
         env:
           PYTHONPATH: src
