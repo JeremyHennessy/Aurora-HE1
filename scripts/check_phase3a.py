@@ -23,9 +23,14 @@ def main() -> None:
     geom = results["openvsp_reported_geometry"]
     tol = float(cfg["validation"]["geometry_relative_tolerance"])
 
-    require(str(results["tool_version"]).startswith(cfg["toolchain"]["openvsp_version"]), f"unexpected OpenVSP version {results['tool_version']}")
+    expected_version = cfg["toolchain"]["openvsp_version"]
+    require(expected_version in str(results["tool_version"]), f"unexpected OpenVSP version {results['tool_version']}")
     for key in ("span_m", "area_m2", "root_chord_m", "tip_chord_m"):
         require(relerr(float(geom[key]), float(wing[key])) <= tol, f"OpenVSP {key} differs from baseline: {geom[key]} vs {wing[key]}")
+    expected_section_span = float(wing["segment_semispan_m"])
+    spans = results["openvsp_section_spans_m"]
+    require(len(spans) == 4, f"expected four OpenVSP section spans, found {len(spans)}")
+    require(all(relerr(float(x), expected_section_span) <= tol for x in spans), f"OpenVSP section spans do not reproduce quarter semispan: {spans}")
 
     pts = results["points"]
     require(len(pts) == int(cfg["analysis"]["alpha_points"]), f"expected {cfg['analysis']['alpha_points']} alpha points, found {len(pts)}")
@@ -55,6 +60,7 @@ def main() -> None:
     summary = {
         "openvsp_version": results["tool_version"],
         "geometry": geom,
+        "section_spans_m": spans,
         "alpha_points": len(pts),
         "lift_curve_slope_per_rad": slope,
         "comparison": {
