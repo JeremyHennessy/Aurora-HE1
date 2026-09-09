@@ -53,11 +53,12 @@
     "blade_count": 2,
     "target_alpha_deg": 6.5,
     "chord_scale": 1.2,
-    "rpm_recovery_sweep": [110, 115, 120, 125, 130, 135, 140, 145, 150, 155, 160, 165, 170, 175, 180, 185, 190]
+    "rpm_recovery_grid": {"start_rpm": 110.0, "end_rpm": 190.0, "step_rpm": 0.5}
   },
   "validation_boundary": [
     "Ncrit variation and forced transition are boundary-layer sensitivity proxies, not calibrated physical roughness-height models.",
     "The blade geometry remains fixed at the Phase 2 reference seed; it is not reoptimized for degraded cases.",
+    "The thrust-recovery sweep uses 0.5-rpm resolution so small thrust deficits are not exaggerated by a coarse RPM grid.",
     "No result establishes real surface contamination losses, blade structural safety, aeroelastic stability, airworthiness, or flight safety."
   ]
 }
