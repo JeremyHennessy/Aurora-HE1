@@ -70,30 +70,66 @@ jobs:
           for script in "${scripts[@]}"; do
             case_id=$(basename "$script" .vspscript)
             log="analysis/phase3b/${case_id}.log"
+            polar="analysis/phase3b/${case_id}.polar"
             echo "=== Phase 3B case: ${case_id} ==="
             set +e
             "$VSP_SCRIPT" -script "$script" >"$log" 2>&1
             rc=$?
             set -e
+            echo "PHASE3B_WRAPPER_RC|${case_id}|${rc}" >> "$log"
             cat "$log"
             if grep -Eq '^[[:space:]]*PHASE3B_(ERROR|API_ERROR)\|' "$log"; then
               echo "${case_id}: explicit Phase 3B solver/API error marker found" >&2
               exit 1
             fi
             if ! grep -q "PHASE3B_COMPLETE|${case_id}" "$log"; then
-              echo "${case_id}: completion marker missing" >&2
+              echo "${case_id}: completion marker missing (wrapper rc=${rc})" >&2
               exit 1
             fi
-            test -s "analysis/phase3b/${case_id}.polar"
-            # OpenVSP 3.51.3 vspscript has returned 96 for successful Phase 3A
-            # scripts and 192 for this successful two-component Phase 3B case.
-            # Accept only those observed nonzero codes after the explicit
-            # completion marker, absence of Phase 3B API/error markers, and a
-            # nonempty native VSPAERO polar have already been verified above.
-            if [ "$rc" -ne 0 ] && [ "$rc" -ne 96 ] && [ "$rc" -ne 192 ]; then
-              echo "${case_id}: unexpected vspscript exit code ${rc}" >&2
-              exit "$rc"
+            if [ ! -s "$polar" ]; then
+              echo "${case_id}: native VSPAERO polar missing/empty (wrapper rc=${rc})" >&2
+              exit 1
             fi
+            # OpenVSP 3.51.3's vspscript wrapper has returned multiple
+            # nonzero values after otherwise successful batch scripts. Preserve
+            # that status above as provenance, but define solver success from
+            # stronger evidence: no explicit API/error marker, exact scripted
+            # completion, a native polar, and the expected five finite VSPAERO
+            # rows/columns. The full parser and engineering gates run next.
+            python - "$polar" <<'PY'
+          import math
+          import sys
+          from pathlib import Path
+
+          path = Path(sys.argv[1])
+          lines = path.read_text(errors="replace").splitlines()
+          header = None
+          start = None
+          required = ("AoA", "CLtot", "CDi", "CMytot")
+          for i, line in enumerate(lines):
+              fields = line.split()
+              if all(name in fields for name in required):
+                  header = fields
+                  start = i + 1
+                  break
+          if header is None or start is None:
+              raise SystemExit(f"{path}: required native-polar header missing")
+          idx = [header.index(name) for name in required]
+          rows = 0
+          for line in lines[start:]:
+              fields = line.split()
+              if len(fields) < len(header):
+                  continue
+              try:
+                  vals = [float(fields[j]) for j in idx]
+              except (ValueError, IndexError):
+                  continue
+              if all(math.isfinite(v) for v in vals):
+                  rows += 1
+          if rows != 5:
+              raise SystemExit(f"{path}: expected 5 finite native-polar rows, found {rows}")
+          print(f"{path}: verified 5 finite native VSPAERO rows")
+          PY
           done
       - name: Parse native VSPAERO stability evidence
         run: python scripts/parse_phase3b_openvsp.py
