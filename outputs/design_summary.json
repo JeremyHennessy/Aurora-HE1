@@ -4,7 +4,7 @@
     "area_m2": 18.0,
     "taper_ratio": 0.48,
     "root_chord_m": 1.0575793184488838,
-    "tip_chord_m": 0.5076380728554642,
+    "tip_chord_m": 0.5076380728554641,
     "mean_aerodynamic_chord_m": 0.8148124622860229,
     "aspect_ratio": 29.38888888888889
   },
@@ -25,8 +25,8 @@
     "lift_to_drag": 34.05258380311973,
     "aerodynamic_power_w": 300.9448360585528
   },
-  "best_ld_speed_m_s": 8.892518358511359,
-  "best_ld_speed_km_h": 32.01306609064089,
+  "best_ld_speed_m_s": 8.89547284546232,
+  "best_ld_speed_km_h": 32.02370224366435,
   "power_split": {
     "prop_shaft_required_w": 341.98276824835546,
     "human_prop_shaft_w": 124.8,
@@ -39,16 +39,51 @@
   "final_drive_ratio": 1.4545454545454546,
   "prop_rpm_from_90rpm_mid_drive": 130.9090909090909,
   "prop_advance_ratio_at_design": 1.5384615384615385,
-  "prop_tip_speed_m_s": 21.59955631398282,
+  "prop_tip_speed_m_s": 21.600559814881837,
   "prop_tip_mach": 0.06347505088122785,
   "prop_ground_clearance_m": 0.32499999999999996,
   "boost_climb_rate_estimate_m_s": 0.1439164091726692,
   "boost_climb_rate_estimate_ft_min": 28.330001848705148,
   "airfoil_stations": [
-    {"eta": 0.0, "airfoil": "DAE11", "twist_deg": 0.0, "semi_span_y_m": 0.0, "chord_m": 1.0575793184488838, "reynolds": 686457.8787099283},
-    {"eta": 0.25, "airfoil": "DAE11/DAE21 provisional blend", "twist_deg": -0.15, "semi_span_y_m": 2.875, "chord_m": 0.920094006, "reynolds": 597210.1044787073},
-    {"eta": 0.5, "airfoil": "DAE21 provisional", "twist_deg": -0.35, "semi_span_y_m": 5.75, "chord_m": 0.782608695652174, "reynolds": 507962.3302474862},
-    {"eta": 0.75, "airfoil": "DAE31 provisional", "twist_deg": -0.85, "semi_span_y_m": 8.625, "chord_m": 0.645123385, "reynolds": 418714.5560162652},
-    {"eta": 1.0, "airfoil": "DAE31/DAE41 provisional blend", "twist_deg": -1.5, "semi_span_y_m": 11.5, "chord_m": 0.5076380728554642, "reynolds": 329466.7817850442}
+    {
+      "eta": 0.0,
+      "airfoil": "DAE11",
+      "twist_deg": 0.0,
+      "semi_span_y_m": 0.0,
+      "chord_m": 1.0575793184488838,
+      "reynolds": 687804.8126997254
+    },
+    {
+      "eta": 0.25,
+      "airfoil": "DAE11/DAE21 provisional blend",
+      "twist_deg": -0.15,
+      "semi_span_y_m": 2.875,
+      "chord_m": 0.9200940070505288,
+      "reynolds": 598390.187048761
+    },
+    {
+      "eta": 0.5,
+      "airfoil": "DAE21 provisional",
+      "twist_deg": -0.35,
+      "semi_span_y_m": 5.75,
+      "chord_m": 0.782608695652174,
+      "reynolds": 508975.5613977968
+    },
+    {
+      "eta": 0.75,
+      "airfoil": "DAE31 provisional",
+      "twist_deg": -0.85,
+      "semi_span_y_m": 8.625,
+      "chord_m": 0.6451233842538191,
+      "reynolds": 419560.9357468325
+    },
+    {
+      "eta": 1.0,
+      "airfoil": "DAE31/DAE41 provisional blend",
+      "twist_deg": -1.5,
+      "semi_span_y_m": 11.5,
+      "chord_m": 0.5076380728554641,
+      "reynolds": 330146.31009586813
+    }
   ]
 }

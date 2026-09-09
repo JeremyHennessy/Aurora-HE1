@@ -32,9 +32,18 @@ All values below are model outputs from `config/he1_baseline.json`; they are not
 - 1-pack supported endurance estimate: 1.36 h
 - 1-pack still-air supported range estimate: 46.4 km
 
+## Propeller / gearing
+
+- Diameter: 2.85 m
+- Design RPM: 130.0
+- 48T:33T ratio: 1.4545
+- Prop RPM at 90 rpm mid-drive output: 130.9
+- Design advance ratio: 1.538
+- Tip Mach: 0.063
+
 ## Boost finding
 
-At the current 500 W battery-input boost assumption and 130 W pilot input, the simple excess-power estimate at design cruise is only **0.144 m/s (28 ft/min)**.
+At the current 500 W battery-input boost assumption and 130 W pilot input, the simple excess-power estimate at design cruise is only **0.144 m/s (28 ft/min)**. This corrects the earlier optimistic multi-m/s conceptual estimate and is a key Phase 2 propulsion-sizing question.
 
 ## Unverified assumptions
 
