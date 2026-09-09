@@ -1,0 +1,41 @@
+name: Phase 2 aero and propeller analysis
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  xfoil-bem:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install XFOIL
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xfoil
+          command -v xfoil
+      - name: Fetch authoritative MIT DAE coordinates
+        run: python scripts/fetch_mit_airfoils.py
+      - name: Generate viscous XFOIL polars
+        env:
+          PYTHONPATH: src
+        run: python scripts/run_xfoil_polars.py
+      - name: Run DAE51 propeller BEM trade
+        env:
+          PYTHONPATH: src
+        run: python scripts/run_propeller_bem.py
+      - name: Preserve Phase 2 analysis artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase2-aero-prop-analysis
+          path: |
+            analysis/airfoils/manifest.json
+            analysis/polars/*.csv
+            analysis/polars/summary.json
+            analysis/phase2/*.json
+            analysis/phase2/*.csv
+          retention-days: 30
