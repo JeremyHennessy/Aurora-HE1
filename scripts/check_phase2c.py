@@ -57,10 +57,12 @@ def main() -> None:
     for row in summary["cases"]:
         fixed = row["fixed_130rpm"]["result"]
         recovery = row["thrust_recovery"]
+        recovery_text = "none"
+        if recovery is not None:
+            recovery_text = f"{recovery['rpm']:.0f} rpm / {recovery['result']['shaft_power_w']:.1f} W"
         print(
             f"{row['scenario_id']}: fixed eta={fixed['propulsive_efficiency']:.4f}, "
-            f"thrust={fixed['thrust_n']:.2f} N, "
-            f"recovery={None if recovery is None else f'{recovery['rpm']:.0f} rpm / {recovery['result']['shaft_power_w']:.1f} W'}"
+            f"thrust={fixed['thrust_n']:.2f} N, recovery={recovery_text}"
         )
 
 
