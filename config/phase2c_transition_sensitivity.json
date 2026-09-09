@@ -1,0 +1,63 @@
+{
+  "status": "PHASE 2C COMPUTATIONAL SENSITIVITY / NOT FOR CONSTRUCTION OR FLIGHT CLEARANCE",
+  "airfoil": "dae51",
+  "analysis_reynolds": [75000, 100000, 150000, 200000, 250000],
+  "alpha_start_deg": -2.0,
+  "alpha_end_deg": 8.0,
+  "alpha_step_deg": 0.5,
+  "required_alpha_min_deg": -1.0,
+  "required_alpha_max_deg": 7.0,
+  "minimum_converged_points": 12,
+  "iteration_limit": 300,
+  "cases": [
+    {
+      "id": "clean_n9",
+      "label": "Clean reference / Ncrit 9",
+      "ncrit": 9.0,
+      "forced_transition": null,
+      "interpretation": "Reference natural-transition XFOIL case matching the existing Phase 2 clean-surface assumption."
+    },
+    {
+      "id": "disturbed_n6",
+      "label": "Moderately disturbed / Ncrit 6",
+      "ncrit": 6.0,
+      "forced_transition": null,
+      "interpretation": "Earlier natural transition proxy for a noisier or less ideal boundary-layer environment; not a calibrated roughness height."
+    },
+    {
+      "id": "severe_n3",
+      "label": "Strongly disturbed / Ncrit 3",
+      "ncrit": 3.0,
+      "forced_transition": null,
+      "interpretation": "Strong transition-disturbance proxy; not a calibrated physical surface-roughness model."
+    },
+    {
+      "id": "forced_x10",
+      "label": "Forced transition at 10% chord",
+      "ncrit": 9.0,
+      "forced_transition": {"upper_x_over_c": 0.10, "lower_x_over_c": 0.10},
+      "interpretation": "Early-transition contamination proxy with transition forced at x/c=0.10 on both surfaces."
+    },
+    {
+      "id": "forced_x05",
+      "label": "Forced transition at 5% chord",
+      "ncrit": 9.0,
+      "forced_transition": {"upper_x_over_c": 0.05, "lower_x_over_c": 0.05},
+      "interpretation": "Severe early-transition contamination proxy with transition forced at x/c=0.05 on both surfaces."
+    }
+  ],
+  "propeller_reference": {
+    "diameter_m": 2.85,
+    "design_rpm": 130.0,
+    "design_speed_m_s": 9.5,
+    "blade_count": 2,
+    "target_alpha_deg": 6.5,
+    "chord_scale": 1.2,
+    "rpm_recovery_sweep": [110, 115, 120, 125, 130, 135, 140, 145, 150, 155, 160, 165, 170, 175, 180, 185, 190]
+  },
+  "validation_boundary": [
+    "Ncrit variation and forced transition are boundary-layer sensitivity proxies, not calibrated physical roughness-height models.",
+    "The blade geometry remains fixed at the Phase 2 reference seed; it is not reoptimized for degraded cases.",
+    "No result establishes real surface contamination losses, blade structural safety, aeroelastic stability, airworthiness, or flight safety."
+  ]
+}
