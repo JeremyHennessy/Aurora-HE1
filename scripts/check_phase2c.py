@@ -20,6 +20,9 @@ def main() -> None:
     require(len(summary["cases"]) == 5, "BEM summary does not contain five cases")
     require(len(polar_summary) == 25, f"expected 25 XFOIL sensitivity polars, found {len(polar_summary)}")
     require(any("not calibrated" in text.lower() for text in summary["analysis_boundary"]), "analysis boundary must state that disturbance proxies are not calibrated physical roughness")
+    grid = cfg["propeller_reference"]["rpm_recovery_grid"]
+    require(float(grid["step_rpm"]) <= 0.5, "RPM recovery grid is too coarse for sensitivity conclusions")
+    require(summary["source_baseline"]["rpm_recovery_resolution"] == grid, "reported RPM recovery resolution differs from configuration")
 
     clean = next(row for row in summary["cases"] if row["scenario_id"] == "clean_n9")
     clean_result = clean["fixed_130rpm"]["result"]
@@ -59,7 +62,7 @@ def main() -> None:
         recovery = row["thrust_recovery"]
         recovery_text = "none"
         if recovery is not None:
-            recovery_text = f"{recovery['rpm']:.0f} rpm / {recovery['result']['shaft_power_w']:.1f} W"
+            recovery_text = f"{recovery['rpm']:.1f} rpm / {recovery['result']['shaft_power_w']:.1f} W"
         print(
             f"{row['scenario_id']}: fixed eta={fixed['propulsive_efficiency']:.4f}, "
             f"thrust={fixed['thrust_n']:.2f} N, recovery={recovery_text}"
