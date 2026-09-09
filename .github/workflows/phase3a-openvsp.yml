@@ -66,13 +66,28 @@ jobs:
           echo "OpenVSP batch executable: $VSP_SCRIPT"
       - name: Run generated OpenVSP / VSPAERO model
         run: |
-          set -o pipefail
-          test -x "$VSP_SCRIPT"
+          # OpenVSP 3.51.3's packaged vspscript currently returns status 96
+          # after a successful scripted main() on this CI runner. Do not infer
+          # success from the process code alone: require the explicit Phase 3A
+          # completion marker and a non-empty native VSPAERO polar, reject all
+          # explicit solver/API error markers, and reject every exit code other
+          # than 0 or the observed 96.
+          set +e
           "$VSP_SCRIPT" -script analysis/phase3a/aurora_phase3a.vspscript 2>&1 | tee analysis/phase3a/openvsp.log
+          VSP_STATUS=${PIPESTATUS[0]}
+          set -e
+
           if grep -Eq '^[[:space:]]*PHASE3A_(ERROR|API_ERROR)\|' analysis/phase3a/openvsp.log; then
             echo 'Explicit Phase 3A solver/API error marker found.' >&2
             exit 1
           fi
+          if [ "$VSP_STATUS" -ne 0 ] && [ "$VSP_STATUS" -ne 96 ]; then
+            echo "Unexpected vspscript exit code: $VSP_STATUS" >&2
+            exit "$VSP_STATUS"
+          fi
+          grep -Eq '^[[:space:]]*PHASE3A_POLAR\|analysis/phase3a/AURORA_HE1_phase3a\.polar[[:space:]]*$' analysis/phase3a/openvsp.log
+          test -s analysis/phase3a/AURORA_HE1_phase3a.polar
+          echo "Accepted vspscript completion status: $VSP_STATUS"
       - name: Parse VSPAERO evidence
         run: python scripts/parse_phase3a_openvsp.py
       - name: Validate geometry and induced drag
