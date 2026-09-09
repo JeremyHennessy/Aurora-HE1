@@ -42,6 +42,16 @@ def system_consequences(*, shaft_power_w: float, speed_m_s: float, config: dict)
     }
 
 
+def rpm_grid(spec: dict) -> list[float]:
+    start = float(spec["start_rpm"])
+    end = float(spec["end_rpm"])
+    step = float(spec["step_rpm"])
+    if step <= 0 or end < start:
+        raise ValueError("invalid RPM recovery grid")
+    count = int(round((end - start) / step))
+    return [start + i * step for i in range(count + 1)]
+
+
 def main() -> None:
     phase_cfg = json.loads(Path("config/phase2c_transition_sensitivity.json").read_text())
     config = load_config("config/he1_baseline.json")
@@ -52,6 +62,7 @@ def main() -> None:
     diameter = float(pref["diameter_m"])
     design_rpm = float(pref["design_rpm"])
     blade_count = int(pref["blade_count"])
+    recovery_rpms = rpm_grid(pref["rpm_recovery_grid"])
     required_thrust = baseline["cruise"]["drag_n"]
     min_re = float(min(phase_cfg["analysis_reynolds"]))
     max_re = float(max(phase_cfg["analysis_reynolds"]))
@@ -82,20 +93,20 @@ def main() -> None:
         )
         recovery_candidates = []
         sweep = []
-        for rpm in pref["rpm_recovery_sweep"]:
+        for rpm in recovery_rpms:
             result = solve_bem(
                 stations=stations,
                 polar=polar,
                 blade_count=blade_count,
                 diameter_m=diameter,
-                rpm=float(rpm),
+                rpm=rpm,
                 speed_m_s=speed,
                 density_kg_m3=env["density_kg_m3"],
                 dynamic_viscosity_pa_s=env["dynamic_viscosity_pa_s"],
             )
             valid_envelope = envelope_ok(result, min_re=min_re, max_re=max_re, min_alpha=min_alpha, max_alpha=max_alpha)
             point = {
-                "rpm": float(rpm),
+                "rpm": rpm,
                 "thrust_n": result.thrust_n,
                 "shaft_power_w": result.shaft_power_w,
                 "propulsive_efficiency": result.propulsive_efficiency,
@@ -108,7 +119,7 @@ def main() -> None:
             }
             sweep.append(point)
             if valid_envelope and result.thrust_n >= required_thrust and result.shaft_power_w > 0 and result.propulsive_efficiency > 0:
-                recovery_candidates.append((result.shaft_power_w, -result.propulsive_efficiency, float(rpm), result))
+                recovery_candidates.append((result.shaft_power_w, -result.propulsive_efficiency, rpm, result))
         recovery = None
         if recovery_candidates:
             recovery_candidates.sort(key=lambda x: (x[0], x[1], x[2]))
@@ -167,6 +178,7 @@ def main() -> None:
         "source_baseline": {
             "required_cruise_thrust_n": required_thrust,
             "design_speed_m_s": speed,
+            "rpm_recovery_resolution": pref["rpm_recovery_grid"],
             "fixed_blade_geometry": {
                 "diameter_m": diameter,
                 "design_rpm": design_rpm,
@@ -183,6 +195,7 @@ def main() -> None:
     (out_dir / "transition_bem_summary.json").write_text(json.dumps(summary, indent=2) + "\n")
     print(json.dumps({
         "required_thrust_n": required_thrust,
+        "rpm_resolution": pref["rpm_recovery_grid"],
         "cases": [
             {
                 "id": row["scenario_id"],
