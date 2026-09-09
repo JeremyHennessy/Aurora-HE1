@@ -58,6 +58,7 @@ jobs:
           ls -la "$(dirname "$VSP_SCRIPT")" | head -n 80
       - name: Run generated OpenVSP / VSPAERO model
         run: |
+          set -o pipefail
           test -x "$VSP_SCRIPT"
           "$VSP_SCRIPT" -script analysis/phase3a/aurora_phase3a.vspscript 2>&1 | tee analysis/phase3a/openvsp.log
       - name: Parse VSPAERO evidence
