@@ -10,6 +10,16 @@ on:
       - 'scripts/parse_phase3a_openvsp.py'
       - 'scripts/check_phase3a.py'
       - '.github/workflows/phase3a-openvsp.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'config/he1_baseline.json'
+      - 'config/phase3a_openvsp.json'
+      - 'src/aurora_he1/geometry.py'
+      - 'scripts/generate_phase3a_openvsp.py'
+      - 'scripts/parse_phase3a_openvsp.py'
+      - 'scripts/check_phase3a.py'
+      - '.github/workflows/phase3a-openvsp.yml'
   workflow_dispatch:
 
 permissions:
@@ -52,15 +62,17 @@ jobs:
           fi
           test -n "$VSP_SCRIPT"
           echo "VSP_SCRIPT=$VSP_SCRIPT" >> "$GITHUB_ENV"
-          echo "VSP_DIR=$(dirname "$VSP_SCRIPT")" >> "$GITHUB_ENV"
           "$VSP_SCRIPT" -help | head -n 20 || true
           echo "OpenVSP batch executable: $VSP_SCRIPT"
-          ls -la "$(dirname "$VSP_SCRIPT")" | head -n 80
       - name: Run generated OpenVSP / VSPAERO model
         run: |
           set -o pipefail
           test -x "$VSP_SCRIPT"
           "$VSP_SCRIPT" -script analysis/phase3a/aurora_phase3a.vspscript 2>&1 | tee analysis/phase3a/openvsp.log
+          if grep -Eq '^[[:space:]]*PHASE3A_(ERROR|API_ERROR)\|' analysis/phase3a/openvsp.log; then
+            echo 'Explicit Phase 3A solver/API error marker found.' >&2
+            exit 1
+          fi
       - name: Parse VSPAERO evidence
         run: python scripts/parse_phase3a_openvsp.py
       - name: Validate geometry and induced drag
