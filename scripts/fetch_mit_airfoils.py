@@ -24,11 +24,15 @@ def main() -> None:
             data = response.read()
         if len(data) < 200 or b"DAE" not in data[:64].upper():
             raise RuntimeError(f"download for {name} does not look like an airfoil coordinate file")
+        sha256 = hashlib.sha256(data).hexdigest()
+        expected = meta.get("expected_sha256")
+        if expected and sha256 != expected:
+            raise RuntimeError(f"source hash mismatch for {name}: expected {expected}, got {sha256}")
         path = out / f"{name}.dat"
         path.write_bytes(data)
         manifest["files"][name] = {
             **meta,
-            "sha256": hashlib.sha256(data).hexdigest(),
+            "sha256": sha256,
             "bytes": len(data),
             "path": str(path),
         }
