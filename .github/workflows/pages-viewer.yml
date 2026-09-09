@@ -64,8 +64,49 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  verify-hosted:
+    if: github.event_name != 'pull_request'
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify served viewer HTML
+        env:
+          PAGE_URL: ${{ needs.deploy.outputs.page_url }}
+        run: |
+          test -n "$PAGE_URL"
+          curl --fail --location --retry 8 --retry-delay 3 --retry-all-errors \
+            --output /tmp/index.html "$PAGE_URL"
+          grep -q '<title>Aurora HE-1 Engineering Viewer</title>' /tmp/index.html
+          grep -q 'Engineering Viewer' /tmp/index.html
+      - name: Verify served engineering snapshot
+        env:
+          PAGE_URL: ${{ needs.deploy.outputs.page_url }}
+        run: |
+          curl --fail --location --retry 8 --retry-delay 3 --retry-all-errors \
+            --output /tmp/verified_snapshot.json "${PAGE_URL%/}/data/verified_snapshot.json"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          data = json.loads(Path('/tmp/verified_snapshot.json').read_text())
+          expected = '8de7fbeac1ee91bde4a082b6a1ac4d6ff13093b7'
+          actual = data['meta']['baseline_commit']
+          if actual != expected:
+              raise SystemExit(f'hosted snapshot baseline mismatch: {actual} != {expected}')
+          if len(data['phase2b']['operating_envelope']) != 7:
+              raise SystemExit('hosted snapshot missing Phase 2B operating envelope')
+          if len(data['airfoils']['summary']) != 22:
+              raise SystemExit('hosted snapshot missing 22 XFOIL cases')
+          print('HOSTED VIEWER VERIFIED')
+          print(f'baseline: {actual}')
+          print(f'Phase 2B points: {len(data["phase2b"]["operating_envelope"])}')
+          print(f'XFOIL cases: {len(data["airfoils"]["summary"])}')
+          PY
