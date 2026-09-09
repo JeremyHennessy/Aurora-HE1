@@ -26,6 +26,8 @@ class BEMResult:
     disk_loading_n_m2: float
     max_reynolds: float
     min_reynolds: float
+    min_alpha_deg: float
+    max_alpha_deg: float
 
 
 def design_constant_alpha_blade(*, diameter_m: float, speed_m_s: float, rpm: float, target_alpha_deg: float, chord_scale: float, radial_stations: int = 24, root_fraction: float = 0.20) -> list[BladeStation]:
@@ -60,6 +62,10 @@ def _prandtl_tip_loss(blade_count: int, radius_m: float, r_m: float, phi_rad: fl
 def solve_bem(*, stations: list[BladeStation], polar: SectionPolar, blade_count: int, diameter_m: float, rpm: float, speed_m_s: float, density_kg_m3: float, dynamic_viscosity_pa_s: float, axial_induction_initial: float = 0.02, iterations: int = 60) -> BEMResult:
     if len(stations) < 3:
         raise ValueError("at least 3 blade stations are required")
+    if rpm <= 0:
+        raise ValueError("rpm must be positive")
+    if speed_m_s <= 0:
+        raise ValueError("BEM implementation requires positive axial speed; static analysis needs a separate formulation")
     radius = diameter_m / 2.0
     omega = rpm * 2.0 * math.pi / 60.0
     sorted_stations = sorted(stations, key=lambda s: s.radius_m)
@@ -67,6 +73,8 @@ def solve_bem(*, stations: list[BladeStation], polar: SectionPolar, blade_count:
     torque = 0.0
     min_re = math.inf
     max_re = 0.0
+    min_alpha = math.inf
+    max_alpha = -math.inf
     for left, right in zip(sorted_stations[:-1], sorted_stations[1:]):
         dr = right.radius_m - left.radius_m
         r = 0.5 * (left.radius_m + right.radius_m)
@@ -75,6 +83,8 @@ def solve_bem(*, stations: list[BladeStation], polar: SectionPolar, blade_count:
         a = axial_induction_initial
         aprime = 0.0
         dthrust = dtorque = 0.0
+        reynolds = 0.0
+        alpha_deg = 0.0
         for _ in range(iterations):
             va = speed_m_s * (1.0 + a)
             vt = omega * r * (1.0 - aprime)
@@ -99,13 +109,15 @@ def solve_bem(*, stations: list[BladeStation], polar: SectionPolar, blade_count:
         torque += dtorque
         min_re = min(min_re, reynolds)
         max_re = max(max_re, reynolds)
+        min_alpha = min(min_alpha, alpha_deg)
+        max_alpha = max(max_alpha, alpha_deg)
     shaft_power = torque * omega
     useful_power = thrust * speed_m_s
     efficiency = useful_power / shaft_power if shaft_power > 0 else 0.0
     n_rps = rpm / 60.0
     advance_ratio = speed_m_s / (n_rps * diameter_m)
     disk_area = math.pi * radius**2
-    return BEMResult(thrust, torque, shaft_power, efficiency, advance_ratio, thrust / disk_area, max_re, min_re)
+    return BEMResult(thrust, torque, shaft_power, efficiency, advance_ratio, thrust / disk_area, max_re, min_re, min_alpha, max_alpha)
 
 
 def optimize_seed_blade(*, polar: SectionPolar, blade_count: int, diameter_m: float, rpm: float, speed_m_s: float, density_kg_m3: float, dynamic_viscosity_pa_s: float, required_thrust_n: float) -> tuple[list[BladeStation], BEMResult, dict[str, float]]:
