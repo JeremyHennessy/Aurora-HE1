@@ -1,0 +1,49 @@
+name: Engineering viewer validation
+
+on:
+  pull_request:
+    paths:
+      - 'viewer/**'
+      - 'scripts/check_viewer_snapshot.py'
+      - '.github/workflows/viewer-validation.yml'
+  push:
+    paths:
+      - 'viewer/**'
+      - 'scripts/check_viewer_snapshot.py'
+      - '.github/workflows/viewer-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  viewer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - name: Extract and check inline JavaScript module
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          html = Path('viewer/index.html').read_text()
+          blocks = re.findall(r'<script type="module">(.*?)</script>', html, re.S)
+          if len(blocks) != 1:
+              raise SystemExit(f'expected exactly one inline module script, found {len(blocks)}')
+          Path('/tmp/viewer-app.mjs').write_text(blocks[0])
+          PY
+          node --check /tmp/viewer-app.mjs
+      - name: Snapshot JSON syntax
+        run: python -m json.tool viewer/data/verified_snapshot.json >/dev/null
+      - name: Engineering snapshot gates
+        run: python scripts/check_viewer_snapshot.py
+      - name: Static asset presence
+        run: |
+          test -s viewer/index.html
+          test -s viewer/data/verified_snapshot.json
