@@ -1,0 +1,30 @@
+name: Engineering validation
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  phase1:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Unit and regression tests
+        env:
+          PYTHONPATH: src
+        run: python -m unittest discover -s tests -v
+      - name: Design consistency gates
+        env:
+          PYTHONPATH: src
+        run: python scripts/check_design.py
+      - name: Regenerate engineering outputs
+        env:
+          PYTHONPATH: src
+        run: |
+          python scripts/generate_outputs.py
+          python scripts/run_trade_study.py
+      - name: Require tracked baseline outputs to match model
+        run: git diff --exit-code -- outputs/design_summary.json outputs/phase1_report.md outputs/power_curve.csv outputs/airfoil_stations.csv outputs/mass_budget.csv

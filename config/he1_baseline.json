@@ -1,0 +1,90 @@
+{
+  "meta": {
+    "name": "Aurora HE-1",
+    "revision": "0.1-digital-baseline",
+    "status": "PRELIMINARY / NOT FOR CONSTRUCTION",
+    "purpose": "Practical single-seat human-electric experimental aircraft"
+  },
+  "environment": {
+    "density_kg_m3": 1.225,
+    "dynamic_viscosity_pa_s": 0.000017894,
+    "gravity_m_s2": 9.80665,
+    "speed_of_sound_m_s": 340.3
+  },
+  "geometry": {
+    "wing": {
+      "span_m": 23.0,
+      "area_m2": 18.0,
+      "taper_ratio": 0.48,
+      "dihedral_deg": 3.5,
+      "incidence_deg": 1.5,
+      "root_le_x_m": 2.70,
+      "panel_lengths_m": [1.0, 3.75, 3.75, 3.5, 3.5, 3.75, 3.75],
+      "airfoil_stations": [
+        {"eta": 0.00, "airfoil": "DAE11", "twist_deg": 0.0},
+        {"eta": 0.25, "airfoil": "DAE11/DAE21 provisional blend", "twist_deg": -0.15},
+        {"eta": 0.50, "airfoil": "DAE21 provisional", "twist_deg": -0.35},
+        {"eta": 0.75, "airfoil": "DAE31 provisional", "twist_deg": -0.85},
+        {"eta": 1.00, "airfoil": "DAE31/DAE41 provisional blend", "twist_deg": -1.50}
+      ]
+    },
+    "tail": {
+      "horizontal_area_m2": 1.77,
+      "vertical_area_m2": 1.55,
+      "tail_ac_x_m": 8.85
+    },
+    "propeller": {
+      "diameter_m": 2.85,
+      "design_rpm": 130.0,
+      "shaft_center_height_m": 1.75,
+      "minimum_target_ground_clearance_m": 0.30,
+      "blade_count": 2
+    },
+    "overall_length_m": 10.8
+  },
+  "aero": {
+    "oswald_efficiency": 0.92,
+    "cd0_profile_plus_parasite": 0.018,
+    "cl_max_clean": 1.60,
+    "propulsive_efficiency": 0.88,
+    "design_cruise_m_s": 9.5,
+    "notes": "CD0, CLmax and propulsive efficiency are engineering estimates pending XFOIL/VSPAERO and physical validation."
+  },
+  "propulsion": {
+    "reference_mid_drive": "Tongsheng TSDZ2B-class torque-sensing mid-drive",
+    "system_voltage_v": 48.0,
+    "battery_nominal_wh": 468.0,
+    "battery_usable_fraction": 0.80,
+    "motor_controller_efficiency": 0.82,
+    "final_drive_efficiency": 0.96,
+    "human_cruise_input_w": 130.0,
+    "electric_boost_battery_input_w": 500.0,
+    "mid_drive_nominal_output_rpm": 90.0,
+    "driver_sprocket_teeth": 48,
+    "prop_sprocket_teeth": 33
+  },
+  "mass": {
+    "reference_pilot_and_personal_gear_kg": 72.5,
+    "items": [
+      {"name": "wing_primary_structure", "mass_kg": 9.0, "x_m": 2.90},
+      {"name": "wing_secondary_structure_and_covering", "mass_kg": 5.0, "x_m": 2.95},
+      {"name": "wing_bracing", "mass_kg": 1.2, "x_m": 2.80},
+      {"name": "center_structure_and_pod_frame", "mass_kg": 4.0, "x_m": 2.40},
+      {"name": "tail_boom", "mass_kg": 2.2, "x_m": 5.80},
+      {"name": "empennage", "mass_kg": 1.5, "x_m": 8.90},
+      {"name": "flight_controls", "mass_kg": 0.8, "x_m": 4.50},
+      {"name": "mid_drive_crank_and_pedals", "mass_kg": 3.6, "x_m": 1.95},
+      {"name": "final_drive_and_prop_shaft", "mass_kg": 1.4, "x_m": 1.50},
+      {"name": "propeller_and_hub", "mass_kg": 1.5, "x_m": 0.45},
+      {"name": "battery_standard", "mass_kg": 2.2, "x_m": 2.75},
+      {"name": "electrical_system", "mass_kg": 0.8, "x_m": 2.60},
+      {"name": "landing_gear", "mass_kg": 1.6, "x_m": 2.50},
+      {"name": "instrumentation", "mass_kg": 0.4, "x_m": 2.30},
+      {"name": "hardware_adhesives_and_fittings", "mass_kg": 1.1, "x_m": 3.00},
+      {"name": "seat_and_nonstructural_fairing", "mass_kg": 1.2, "x_m": 2.20}
+    ],
+    "reference_pilot_cg_x_m": 2.83,
+    "target_cg_fraction_mac": 0.23,
+    "provisional_cg_range_fraction_mac": [0.18, 0.28]
+  }
+}
