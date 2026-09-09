@@ -27,6 +27,10 @@ def main() -> None:
             "airfoil_label": s["airfoil"],
         })
     segment_span = wing.span_m / 2.0 / (len(eta) - 1)
+    section_areas = [segment_span * (stations[i - 1]["chord_m"] + stations[i]["chord_m"]) / 2.0 for i in range(1, len(stations))]
+    if abs(2.0 * sum(section_areas) - wing.area_m2) > 1e-10:
+        raise SystemExit("derived OpenVSP section areas do not close to baseline wing area")
+
     manifest = {
         "status": cfg["status"],
         "source_baseline": "config/he1_baseline.json",
@@ -45,6 +49,7 @@ def main() -> None:
             "incidence_deg": float(wing_cfg["incidence_deg"]),
             "dihedral_deg": float(wing_cfg["dihedral_deg"]),
             "segment_semispan_m": segment_span,
+            "section_semispan_areas_m2": section_areas,
             "stations": stations,
             "vspaero_surface_model": "thin symmetric four-series sections; planform/dihedral/incidence/twist authoritative, viscous airfoil drag excluded",
         },
@@ -57,10 +62,6 @@ def main() -> None:
     twists = [stations[i]["twist_deg"] for i in range(1, len(stations))]
     chords = [s["chord_m"] for s in stations]
     a = cfg["analysis"]
-    # APIDefines assigns VSPAERO VORTEX_LATTICE = 0. OpenVSP 3.51.3's
-    # AngelScript binding does not export the enum symbol itself, so the
-    # generated script uses the documented integer value and immediately
-    # reads it back from Analysis Manager as an execution-time guard.
     lines = [
         "void main()",
         "{",
@@ -77,16 +78,18 @@ def main() -> None:
     ]
     for i in range(1, 5):
         lines += [
-            f"    SetDriverGroup(wing_id, {i}, SPAN_WSECT_DRIVER, ROOTC_WSECT_DRIVER, TIPC_WSECT_DRIVER);",
-            f'    SetParmVal(wing_id, "Span", "XSec_{i}", {segment_span:.12f});',
+            f"    // Section {i}: AREA + root chord + tip chord are the three drivers.",
+            f"    SetDriverGroup(wing_id, {i}, AREA_WSECT_DRIVER, ROOTC_WSECT_DRIVER, TIPC_WSECT_DRIVER);",
             f'    SetParmVal(wing_id, "Root_Chord", "XSec_{i}", {chords[i-1]:.12f});',
             f'    SetParmVal(wing_id, "Tip_Chord", "XSec_{i}", {chords[i]:.12f});',
+            f'    SetParmVal(wing_id, "Area", "XSec_{i}", {section_areas[i-1]:.12f});',
             f'    SetParmVal(wing_id, "Sweep", "XSec_{i}", 0.0);',
             f'    SetParmVal(wing_id, "Sweep_Location", "XSec_{i}", 0.0);',
             f'    SetParmVal(wing_id, "Dihedral", "XSec_{i}", {float(wing_cfg["dihedral_deg"]):.12f});',
             f'    SetParmVal(wing_id, "Twist", "XSec_{i}", {twists[i-1]:.12f});',
             f'    SetParmVal(wing_id, "Twist_Location", "XSec_{i}", 0.25);',
             f'    SetParmVal(wing_id, "SectTess_U", "XSec_{i}", 16);',
+            "    Update();",
         ]
     lines += [
         f'    SetParmVal(wing_id, "X_Rel_Location", "XForm", {float(wing_cfg["root_le_x_m"]):.12f});',
@@ -109,17 +112,19 @@ def main() -> None:
         '    Print(GetParmVal(wing_id, "TotalArea", "WingGeom"), false); Print("|", false);',
         '    Print(GetParmVal(wing_id, "Root_Chord", "XSec_1"), false); Print("|", false);',
         '    Print(GetParmVal(wing_id, "Tip_Chord", "XSec_4"));',
+        '    Print("PHASE3A_SECTION_SPANS|", false);',
+        '    Print(GetParmVal(wing_id, "Span", "XSec_1"), false); Print("|", false);',
+        '    Print(GetParmVal(wing_id, "Span", "XSec_2"), false); Print("|", false);',
+        '    Print(GetParmVal(wing_id, "Span", "XSec_3"), false); Print("|", false);',
+        '    Print(GetParmVal(wing_id, "Span", "XSec_4"));',
         '    string cg_name = "VSPAEROComputeGeometry";',
         '    SetAnalysisInputDefaults(cg_name);',
-        '    array<int> method(1, 0);',
-        '    SetIntAnalysisInput(cg_name, "AnalysisMethod", method);',
-        '    array<int> confirm_method = GetIntAnalysisInput(cg_name, "AnalysisMethod");',
-        '    if (confirm_method.size() == 0 || confirm_method[0] != 0) { Print("PHASE3A_ERROR|VLM method assignment failed"); return; }',
         '    array<int> geomset(1, SET_ALL); SetIntAnalysisInput(cg_name, "GeomSet", geomset);',
         '    string cg_res = ExecAnalysis(cg_name);',
         '    if (cg_res.length() == 0) { Print("PHASE3A_ERROR|VSPAEROComputeGeometry returned no result"); return; }',
         '    string analysis_name = "VSPAEROSweep";',
         '    SetAnalysisInputDefaults(analysis_name);',
+        '    array<int> method(1, 0);',
         '    SetIntAnalysisInput(analysis_name, "AnalysisMethod", method);',
         '    array<int> confirm_sweep_method = GetIntAnalysisInput(analysis_name, "AnalysisMethod");',
         '    if (confirm_sweep_method.size() == 0 || confirm_sweep_method[0] != 0) { Print("PHASE3A_ERROR|VLM sweep method assignment failed"); return; }',
@@ -153,7 +158,7 @@ def main() -> None:
         "}",
     ]
     (out / "aurora_phase3a.vspscript").write_text("\n".join(lines) + "\n")
-    print(json.dumps({"span_m": wing.span_m, "area_m2": wing.area_m2, "segments": 4, "script": str(out / "aurora_phase3a.vspscript")}, indent=2))
+    print(json.dumps({"span_m": wing.span_m, "area_m2": wing.area_m2, "segments": 4, "segment_area_m2": section_areas, "script": str(out / "aurora_phase3a.vspscript")}, indent=2))
 
 
 if __name__ == "__main__":
