@@ -22,7 +22,6 @@ def envelope_ok(result, *, min_re: float, max_re: float, min_alpha: float, max_a
 
 def system_consequences(*, shaft_power_w: float, speed_m_s: float, config: dict) -> dict[str, float]:
     prop = config["propulsion"]
-    battery = config["battery"]
     final_drive = prop["final_drive_efficiency"]
     motor_controller = prop["motor_controller_efficiency"]
     human_input = prop["human_cruise_input_w"]
@@ -30,7 +29,7 @@ def system_consequences(*, shaft_power_w: float, speed_m_s: float, config: dict)
     electric_shaft = max(0.0, shaft_power_w - human_shaft)
     mid_drive_mechanical = electric_shaft / final_drive
     battery_input = mid_drive_mechanical / motor_controller
-    usable_wh = battery["nominal_energy_wh"] * battery["usable_fraction"]
+    usable_wh = prop["battery_nominal_wh"] * prop["battery_usable_fraction"]
     endurance_h = usable_wh / battery_input if battery_input > 0 else float("inf")
     return {
         "human_prop_shaft_w": human_shaft,
