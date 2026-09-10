@@ -1,0 +1,39 @@
+{
+  "status": "PHASE 3D PROVISIONAL ELEVATOR / TRIM TRADE / NOT FOR CONSTRUCTION OR FLIGHT CLEARANCE",
+  "source_main_sha": "2d49f8eb7d03c56da2dbd103cbde1179b5031436",
+  "toolchain": {
+    "openvsp_version": "3.51.3",
+    "platform": "Ubuntu-24.04_amd64",
+    "package_url": "https://openvsp.org/zips/current/linux/OpenVSP-3.51.3-Ubuntu-24.04_amd64.deb"
+  },
+  "tail_candidates": [
+    {"id": "SMALL_LONG", "area_m2": 0.40, "tail_ac_x_m": 8.85, "aspect_ratio": 3.5, "taper_ratio": 0.70, "phase3c_static_margin_fraction_mac": 0.1239},
+    {"id": "MID", "area_m2": 0.60, "tail_ac_x_m": 8.00, "aspect_ratio": 3.5, "taper_ratio": 0.70, "phase3c_static_margin_fraction_mac": 0.1439},
+    {"id": "LARGE_SHORT", "area_m2": 0.80, "tail_ac_x_m": 7.00, "aspect_ratio": 3.5, "taper_ratio": 0.70, "phase3c_static_margin_fraction_mac": 0.1474}
+  ],
+  "elevator": {
+    "provisional_chord_fraction": 0.30,
+    "chord_fraction_basis": "PDR-0.1 provisional elevator approximately 30% horizontal-tail chord; not baseline-promoted",
+    "span_fraction_candidates": [0.70, 0.85, 1.00],
+    "probe_span_fraction": 0.85,
+    "deflection_deg": [-20.0, -10.0, 0.0, 10.0, 20.0]
+  },
+  "trim_screen": {
+    "gross_mass_kg": 110.0,
+    "speeds_m_s": [8.5, 9.5, 11.0],
+    "cg_fraction_mac": [0.18, 0.23, 0.28],
+    "near_stall_note": "8.0 m/s is intentionally excluded from the first VLM trim trade because it is too close to the current analytical stall estimate for a linear thin-surface control-authority screen."
+  },
+  "probe": {
+    "tail_candidate": "MID",
+    "eta_start": 0.075,
+    "eta_end": 0.925,
+    "test_deflection_deg": 10.0
+  },
+  "boundary": [
+    "Phase 3D will compare provisional elevator geometry and trim authority; it does not promote a horizontal tail or elevator.",
+    "Control-surface parameter names and symmetric gain conventions are probed against the pinned OpenVSP 3.51.3 API before the full trade is generated.",
+    "VLM control authority is a linear/pre-stall computational screen and does not establish hinge moments, structural adequacy, control feel, stall behavior or flight clearance.",
+    "Near-stall trim, propeller slipstream, fuselage interference and aeroelastic control effectiveness are deferred."
+  ]
+}
