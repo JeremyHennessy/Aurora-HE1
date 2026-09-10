@@ -1,0 +1,75 @@
+{
+  "status": "PHASE 3B PROVISIONAL LONGITUDINAL STABILITY TRADE / NOT FOR CONSTRUCTION OR FLIGHT CLEARANCE",
+  "source_phase3a_main_sha": "3acd38ffee0665e8b202fbb05559c569c516b2f5",
+  "toolchain": {
+    "openvsp_version": "3.51.3",
+    "platform": "Ubuntu-24.04_amd64",
+    "package_url": "https://openvsp.org/zips/current/linux/OpenVSP-3.51.3-Ubuntu-24.04_amd64.deb"
+  },
+  "scope": {
+    "authoritative_inputs": [
+      "main_wing_geometry_from_config/he1_baseline.json",
+      "horizontal_tail_area_m2_from_baseline",
+      "tail_aerodynamic_center_x_m_from_baseline",
+      "reference_mass_and_cg_from_baseline"
+    ],
+    "provisional_inputs": [
+      "horizontal_tail_aspect_ratio",
+      "horizontal_tail_taper_ratio",
+      "horizontal_tail_zero_sweep",
+      "horizontal_tail_zero_dihedral",
+      "horizontal_tail_zero_incidence",
+      "horizontal_tail_vertical_position_z_0",
+      "symmetric_thin_tail_section"
+    ],
+    "excluded": [
+      "vertical_tail",
+      "fuselage_aerodynamic_shell",
+      "elevator_geometry_and_deflection",
+      "propeller_slipstream",
+      "landing_gear_drag",
+      "viscous_profile_drag",
+      "aeroelastic_deformation"
+    ]
+  },
+  "horizontal_tail_family": {
+    "incidence_deg": 0.0,
+    "dihedral_deg": 0.0,
+    "leading_edge_sweep_deg": 0.0,
+    "vertical_position_m": 0.0,
+    "candidates": [
+      {"id": "HT35T70", "aspect_ratio": 3.5, "taper_ratio": 0.70},
+      {"id": "HT45T65", "aspect_ratio": 4.5, "taper_ratio": 0.65},
+      {"id": "HT55T65", "aspect_ratio": 5.5, "taper_ratio": 0.65},
+      {"id": "HT65T55", "aspect_ratio": 6.5, "taper_ratio": 0.55},
+      {"id": "HT55T100", "aspect_ratio": 5.5, "taper_ratio": 1.00}
+    ]
+  },
+  "analysis": {
+    "method": "VORTEX_LATTICE",
+    "mach": 0.03,
+    "alpha_start_deg": -2.0,
+    "alpha_end_deg": 6.0,
+    "alpha_points": 5,
+    "reference_speed_m_s": 9.5,
+    "reference_density_kg_m3": 1.225
+  },
+  "design_review": {
+    "provisional_static_margin_review_band_fraction_mac": [0.08, 0.20],
+    "note": "The review band is a screening target, not an acceptance or flight-safety limit. Phase 3B may show that the baseline tail area/arm combination is outside it."
+  },
+  "validation": {
+    "geometry_relative_tolerance": 0.003,
+    "minimum_static_margin_fraction_mac": 0.02,
+    "maximum_static_margin_fraction_mac": 0.50,
+    "require_positive_lift_curve_slope": true,
+    "require_negative_pitching_moment_slope": true
+  },
+  "boundary": [
+    "Phase 3B compares provisional horizontal-tail planforms while preserving the baseline tail area and aerodynamic-center station.",
+    "No candidate is promoted to the baseline by this analysis.",
+    "Static margin is a VLM computational result, not a construction or flight-clearance value.",
+    "Trim and control authority require an explicit elevator geometry and are deferred to a later phase.",
+    "Directional/lateral stability requires an explicit vertical-tail geometry and is outside Phase 3B."
+  ]
+}
