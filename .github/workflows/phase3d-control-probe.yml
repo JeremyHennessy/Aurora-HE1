@@ -55,23 +55,49 @@ jobs:
             echo "explicit Phase 3D probe/API error marker found" >&2
             exit 1
           fi
-          grep -q '^PHASE3D_PROBE_COMPLETE$' analysis/phase3d_probe/control_probe.log
-          grep -q '^PHASE3D_PROBE_FOUND|1|1|1|1|1$' analysis/phase3d_probe/control_probe.log
           test -s analysis/phase3d_probe/control_probe.vsp3
           python - <<'PY'
-          import re
           from pathlib import Path
-          text=Path('analysis/phase3d_probe/control_probe.log').read_text(errors='replace')
-          m=re.search(r'^PHASE3D_PROBE_GROUP_COUNT\|(\d+)$', text, re.M)
-          if not m or int(m.group(1)) < 1:
-              raise SystemExit('control surface auto-group was not created')
-          m=re.search(r'^PHASE3D_PROBE_GROUP_VALUES\|([^|]+)\|([^|]+)\|([^\n]+)$', text, re.M)
-          if not m:
-              raise SystemExit('control group values marker missing')
-          vals=[float(x.strip()) for x in m.groups()]
-          if abs(vals[0]-10.0)>1e-9 or abs(vals[1]-1.0)>1e-9 or abs(vals[2]+1.0)>1e-9:
-              raise SystemExit(f'unexpected deflection/gain values: {vals}')
-          print('PHASE 3D CONTROL PROBE CONTRACT PASSED', vals)
+
+          lines=[line.strip() for line in Path('analysis/phase3d_probe/control_probe.log').read_text(errors='replace').splitlines()]
+          if 'PHASE3D_PROBE_COMPLETE' not in lines:
+              raise SystemExit('completion marker missing')
+
+          def marker(prefix):
+              for line in lines:
+                  if line.startswith(prefix):
+                      return [x.strip() for x in line.split('|')]
+              raise SystemExit(f'missing marker {prefix}')
+
+          found=marker('PHASE3D_PROBE_FOUND|')
+          if found[1:] != ['1','1','1','1','1']:
+              raise SystemExit(f'expected control-surface parms were not all found: {found}')
+
+          group=marker('PHASE3D_PROBE_GROUP_COUNT|')
+          if int(group[1]) < 1:
+              raise SystemExit(f'control surface auto-group was not created: {group}')
+
+          ids=marker('PHASE3D_PROBE_GROUP_IDS|')
+          if len(ids) != 4 or any(not x for x in ids[1:]):
+              raise SystemExit(f'control group parm IDs missing: {ids}')
+
+          vals=marker('PHASE3D_PROBE_GROUP_VALUES|')
+          numbers=[float(x) for x in vals[1:]]
+          if len(numbers) != 3 or abs(numbers[0]-10.0)>1e-9 or abs(numbers[1]-1.0)>1e-9 or abs(numbers[2]+1.0)>1e-9:
+              raise SystemExit(f'unexpected deflection/gain values: {numbers}')
+
+          required_names={'EtaFlag','EtaStart','EtaEnd','Length_C_Start','Length_C_End','Abs_Rel_Flag','SE_Const_Flag'}
+          names=set()
+          for line in lines:
+              if line.startswith('PHASE3D_PROBE_PARM|'):
+                  parts=[x.strip() for x in line.split('|')]
+                  if len(parts) >= 2:
+                      names.add(parts[1])
+          missing=sorted(required_names-names)
+          if missing:
+              raise SystemExit(f'expected OpenVSP control-surface parameters missing: {missing}')
+
+          print('PHASE 3D CONTROL PROBE CONTRACT PASSED', numbers)
           PY
       - name: Preserve Phase 3D probe evidence
         if: always()
