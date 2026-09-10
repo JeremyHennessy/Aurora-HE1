@@ -1,0 +1,132 @@
+name: Phase 3D elevator and trim trade
+
+on:
+  pull_request:
+    paths:
+      - 'config/he1_baseline.json'
+      - 'config/phase3d_elevator_trim.json'
+      - 'src/aurora_he1/geometry.py'
+      - 'scripts/generate_phase3d_openvsp.py'
+      - 'scripts/parse_phase3d_openvsp.py'
+      - 'scripts/check_phase3d.py'
+      - '.github/workflows/phase3d-elevator-trim.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'config/he1_baseline.json'
+      - 'config/phase3d_elevator_trim.json'
+      - 'src/aurora_he1/geometry.py'
+      - 'scripts/generate_phase3d_openvsp.py'
+      - 'scripts/parse_phase3d_openvsp.py'
+      - 'scripts/check_phase3d.py'
+      - '.github/workflows/phase3d-elevator-trim.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  elevator-trim:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - name: Check Phase 3D sources
+        run: |
+          python -m py_compile scripts/generate_phase3d_openvsp.py scripts/parse_phase3d_openvsp.py scripts/check_phase3d.py
+          python -m json.tool config/phase3d_elevator_trim.json >/dev/null
+      - name: Generate elevator and trim cases
+        env:
+          PYTHONPATH: src
+        run: python scripts/generate_phase3d_openvsp.py
+      - name: Install pinned OpenVSP 3.51.3
+        run: |
+          URL=$(python - <<'PY'
+          import json
+          print(json.load(open('config/phase3d_elevator_trim.json'))['toolchain']['package_url'])
+          PY
+          )
+          curl --fail --location --retry 5 --retry-delay 3 --output /tmp/openvsp.deb "$URL"
+          sudo apt-get update
+          sudo apt-get install -y desktop-file-utils
+          sudo apt-get install -y /tmp/openvsp.deb
+          VSP_SCRIPT=$(command -v vspscript || true)
+          if [ -z "$VSP_SCRIPT" ]; then
+            VSP_SCRIPT=$(find /usr /opt -type f -name vspscript -perm -111 2>/dev/null | head -n 1)
+          fi
+          test -n "$VSP_SCRIPT"
+          echo "VSP_SCRIPT=$VSP_SCRIPT" >> "$GITHUB_ENV"
+      - name: Run Phase 3D VSPAERO family
+        run: |
+          set -u
+          shopt -s nullglob
+          scripts=(analysis/phase3d/*.vspscript)
+          test ${#scripts[@]} -eq 23
+          for script in "${scripts[@]}"; do
+            case_id=$(basename "$script" .vspscript)
+            log="analysis/phase3d/${case_id}.log"
+            polar="analysis/phase3d/${case_id}.polar"
+            echo "=== Phase 3D case: ${case_id} ==="
+            set +e
+            "$VSP_SCRIPT" -script "$script" >"$log" 2>&1
+            rc=$?
+            set -e
+            echo "PHASE3D_WRAPPER_RC|${case_id}|${rc}" >> "$log"
+            cat "$log"
+            if grep -Eq '^[[:space:]]*PHASE3D_(ERROR|API_ERROR)\|' "$log"; then
+              echo "${case_id}: explicit solver/API error marker found" >&2
+              exit 1
+            fi
+            test -s "$polar"
+            python - "$log" "$polar" "$case_id" <<'PY'
+          import math,sys
+          from pathlib import Path
+          log=Path(sys.argv[1]); polar=Path(sys.argv[2]); cid=sys.argv[3]
+          lines=[x.strip() for x in log.read_text(errors='replace').splitlines()]
+          if f'PHASE3D_COMPLETE|{cid}' not in lines:
+              raise SystemExit(f'{cid}: completion marker missing')
+          found=next((x for x in lines if x.startswith(f'PHASE3D_CONTROL_FOUND|{cid}|')),None)
+          if found is None or [p.strip() for p in found.split('|')][2:] != ['1']*7:
+              raise SystemExit(f'{cid}: control-surface parameter contract incomplete: {found}')
+          raw=polar.read_text(errors='replace').splitlines(); header=None; start=None
+          required=('AoA','CLtot','CDi','CMytot')
+          for i,line in enumerate(raw):
+              fields=line.split()
+              if all(k in fields for k in required): header=fields; start=i+1; break
+          if header is None: raise SystemExit(f'{cid}: polar header missing')
+          idx=[header.index(k) for k in required]; rows=0
+          for line in raw[start:]:
+              fields=line.split()
+              if len(fields)<len(header): continue
+              try: vals=[float(fields[j]) for j in idx]
+              except (ValueError,IndexError): continue
+              if all(math.isfinite(v) for v in vals): rows+=1
+          if rows != 10: raise SystemExit(f'{cid}: expected 10 finite polar rows, found {rows}')
+          print(f'{cid}: verified 10 native VSPAERO rows')
+          PY
+          done
+      - name: Parse elevator and trim evidence
+        run: python scripts/parse_phase3d_openvsp.py
+      - name: Validate Phase 3D control authority
+        run: python scripts/check_phase3d.py
+      - name: Preserve Phase 3D evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase3d-elevator-trim
+          path: |
+            analysis/phase3d/manifest.json
+            analysis/phase3d/results.json
+            analysis/phase3d/validation_summary.json
+            analysis/phase3d/*.vspscript
+            analysis/phase3d/*.vsp3
+            analysis/phase3d/*.log
+            analysis/phase3d/*.polar
+            analysis/phase3d/*.history
+            analysis/phase3d/*.lod
+            analysis/phase3d/*.adb
+          if-no-files-found: warn
+          retention-days: 30
