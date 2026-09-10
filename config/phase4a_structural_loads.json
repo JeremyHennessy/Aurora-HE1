@@ -1,0 +1,52 @@
+{
+  "status": "PHASE 4A PRELIMINARY STRUCTURAL LOADS / NOT FOR CONSTRUCTION OR FLIGHT CLEARANCE",
+  "source_phase3c_main_sha": "e7229b46d519fd242e303abf6dbf464f8334674a",
+  "toolchain": {
+    "openvsp_version": "3.51.3",
+    "platform": "Ubuntu-24.04_amd64",
+    "package_url": "https://openvsp.org/zips/current/linux/OpenVSP-3.51.3-Ubuntu-24.04_amd64.deb"
+  },
+  "aero_load_shape": {
+    "method": "VSPAERO_VORTEX_LATTICE_WING_ONLY",
+    "alpha_deg": [4.0, 6.0],
+    "selected_conservative_alpha_deg": 6.0,
+    "mach": 0.03,
+    "note": "Section vertical-force shape is normalized to unit half-wing lift, so the VSPAERO reference speed is not used as a structural load magnitude. The 4/6 degree comparison is a load-shape sensitivity check, not a maneuver-envelope solution."
+  },
+  "structural_concept": {
+    "source": "Aurora_HE-1_PDR_Blueprint_Package.pdf, PDR-0.1 sheets 2-3; concept only where consistent with the current digital baseline",
+    "primary_spar_fraction_chord": 0.32,
+    "rear_member_fraction_chord": 0.70,
+    "spar_effective_depth_fraction_chord": 0.125,
+    "panel_joint_semispan_y_m": [1.50, 5.25, 8.75],
+    "brace_station_semispan_y_m": 5.25,
+    "positive_limit_load_factor_g": 2.5,
+    "negative_limit_load_factor_g": -1.0,
+    "ultimate_factor_on_limit": 1.5,
+    "illustrative_positive_brace_halfwing_vertical_share": 0.60,
+    "illustrative_brace_angle_deg": 14.9,
+    "brace_unloaded_in_negative_case": true,
+    "note": "Brace share and angle reproduce the PDR illustrative load path only. Elastic compatibility, fitting geometry and actual brace angle are unresolved."
+  },
+  "screening_only": {
+    "effective_cap_stress_mpa": [200.0, 300.0, 500.0],
+    "note": "These are parametric stress denominators, not material allowables or laminate design values."
+  },
+  "validation": {
+    "geometry_relative_tolerance": 0.003,
+    "maximum_root_moment_shape_sensitivity_fraction": 0.03,
+    "expected_pdr_brace_tension_limit_n": 3100.0,
+    "pdr_brace_tension_relative_tolerance": 0.05,
+    "minimum_positive_limit_root_moment_nm": 5000.0,
+    "maximum_positive_limit_root_moment_nm": 8000.0
+  },
+  "boundary": [
+    "Phase 4A computes structural load demand, not structural adequacy.",
+    "The current 110 kg gross reference and preliminary +2.5g / -1.0g PDR load factors are retained for comparison; they are not certification limits.",
+    "The aerodynamic span-load shape is current VSPAERO evidence; it is normalized and scaled to the requested load factor.",
+    "Wing structural inertia relief, gust cases, landing loads, control-surface loads and local torsion are not yet included.",
+    "Brace share is imposed from the old PDR concept and is not solved from elastic compatibility.",
+    "Cap-area sensitivity does not address compression buckling, laminate knockdowns, fatigue, joints, crippling, bearing, bondline strength or damage tolerance.",
+    "No material, spar laminate, brace line, fitting, panel joint or airframe structure is approved or promoted by this analysis."
+  ]
+}
