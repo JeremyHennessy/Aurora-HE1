@@ -7,12 +7,16 @@ on:
       - 'viewer/**'
       - 'scripts/check_viewer_snapshot.py'
       - 'scripts/check_sandbox_model.py'
+      - 'scripts/check_viewer_geometry.py'
+      - 'scripts/generate_viewer_geometry.py'
       - '.github/workflows/pages-viewer.yml'
   pull_request:
     paths:
       - 'viewer/**'
       - 'scripts/check_viewer_snapshot.py'
       - 'scripts/check_sandbox_model.py'
+      - 'scripts/check_viewer_geometry.py'
+      - 'scripts/generate_viewer_geometry.py'
       - '.github/workflows/pages-viewer.yml'
   workflow_dispatch:
 
@@ -31,16 +35,30 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: '3.13'
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
       - name: Validate viewer engineering snapshot
         run: python scripts/check_viewer_snapshot.py
       - name: Validate scenario sandbox model
         run: python scripts/check_sandbox_model.py
+      - name: Validate generated Phase 3 geometry freshness
+        run: python scripts/generate_viewer_geometry.py --check
+      - name: Validate Phase 3 geometry model
+        run: python scripts/check_viewer_geometry.py
+      - name: Validate viewer JavaScript
+        run: node --check viewer/app.js
       - name: Validate publishable viewer tree
         run: |
           test -s viewer/index.html
+          test -s viewer/app.js
+          test -s viewer/styles.css
           test -s viewer/sandbox.html
           test -s viewer/data/verified_snapshot.json
           test -s viewer/data/sandbox_model.json
+          test -s viewer/data/geometry_fidelity.json
+          test -s viewer/data/wing_profiles.json
+          test -s viewer/data/phase3b_results.json
 
   build:
     if: github.event_name != 'pull_request'
@@ -83,58 +101,54 @@ jobs:
     needs: deploy
     runs-on: ubuntu-latest
     steps:
-      - name: Verify served viewer HTML
+      - name: Verify served Phase 3 viewer assets
         env:
           PAGE_URL: ${{ needs.deploy.outputs.page_url }}
         run: |
           test -n "$PAGE_URL"
-          curl --fail --location --retry 8 --retry-delay 3 --retry-all-errors \
-            --output /tmp/index.html "$PAGE_URL"
+          for path in index.html app.js styles.css data/geometry_fidelity.json data/wing_profiles.json data/phase3b_results.json; do
+            curl --fail --location --retry 8 --retry-delay 3 --retry-all-errors --output "/tmp/$(basename "$path")" "${PAGE_URL%/}/$path"
+          done
           grep -q '<title>Aurora HE-1 Engineering Viewer</title>' /tmp/index.html
-          grep -q 'Engineering Viewer' /tmp/index.html
-      - name: Verify served engineering snapshot
+          grep -q "Phase 3 geometry loaded" /tmp/app.js
+          grep -q 'model-layout' /tmp/styles.css
+      - name: Verify served engineering provenance
         env:
           PAGE_URL: ${{ needs.deploy.outputs.page_url }}
         run: |
-          curl --fail --location --retry 8 --retry-delay 3 --retry-all-errors \
-            --output /tmp/verified_snapshot.json "${PAGE_URL%/}/data/verified_snapshot.json"
+          curl --fail --location --retry 8 --retry-delay 3 --retry-all-errors --output /tmp/verified_snapshot.json "${PAGE_URL%/}/data/verified_snapshot.json"
+          curl --fail --location --retry 8 --retry-delay 3 --retry-all-errors --output /tmp/geometry_fidelity.json "${PAGE_URL%/}/data/geometry_fidelity.json"
+          curl --fail --location --retry 8 --retry-delay 3 --retry-all-errors --output /tmp/phase3b_results.json "${PAGE_URL%/}/data/phase3b_results.json"
           python - <<'PY'
           import json
           from pathlib import Path
-
-          data = json.loads(Path('/tmp/verified_snapshot.json').read_text())
-          expected = '8de7fbeac1ee91bde4a082b6a1ac4d6ff13093b7'
-          actual = data['meta']['baseline_commit']
-          if actual != expected:
-              raise SystemExit(f'hosted snapshot baseline mismatch: {actual} != {expected}')
-          if len(data['phase2b']['operating_envelope']) != 7:
-              raise SystemExit('hosted snapshot missing Phase 2B operating envelope')
-          if len(data['airfoils']['summary']) != 22:
-              raise SystemExit('hosted snapshot missing 22 XFOIL cases')
-          print('HOSTED VIEWER VERIFIED')
-          print(f'baseline: {actual}')
-          print(f'Phase 2B points: {len(data["phase2b"]["operating_envelope"])}')
-          print(f'XFOIL cases: {len(data["airfoils"]["summary"])}')
+          snap=json.loads(Path('/tmp/verified_snapshot.json').read_text())
+          geom=json.loads(Path('/tmp/geometry_fidelity.json').read_text())
+          p3b=json.loads(Path('/tmp/phase3b_results.json').read_text())
+          expected='8de7fbeac1ee91bde4a082b6a1ac4d6ff13093b7'
+          if snap['meta']['baseline_commit'] != expected: raise SystemExit('hosted snapshot baseline mismatch')
+          if len(snap['phase2b']['operating_envelope']) != 7: raise SystemExit('hosted snapshot missing Phase 2B envelope')
+          if len(snap['airfoils']['summary']) != 22: raise SystemExit('hosted snapshot missing XFOIL cases')
+          if geom['meta']['source_phase3b_merge'] != '0e8c0b0435373c57595401bf2f89dcf12cb09271': raise SystemExit('hosted Phase 3B merge provenance mismatch')
+          if len(geom['horizontal_tail']['candidates']) != 5: raise SystemExit('hosted tail family incomplete')
+          if geom['phase3b_results']['cases_inside_review_band']: raise SystemExit('hosted stability interpretation changed unexpectedly')
+          if p3b['meta']['validation_run'] != 34503773696: raise SystemExit('hosted Phase 3B evidence run mismatch')
+          print('HOSTED PHASE 3 VIEWER VERIFIED')
           PY
       - name: Verify served scenario sandbox
         env:
           PAGE_URL: ${{ needs.deploy.outputs.page_url }}
         run: |
-          curl --fail --location --retry 8 --retry-delay 3 --retry-all-errors \
-            --output /tmp/sandbox.html "${PAGE_URL%/}/sandbox.html"
+          curl --fail --location --retry 8 --retry-delay 3 --retry-all-errors --output /tmp/sandbox.html "${PAGE_URL%/}/sandbox.html"
           grep -q '<title>Aurora HE-1 Scenario Sandbox</title>' /tmp/sandbox.html
           grep -q 'UNVERIFIED SCENARIO' /tmp/sandbox.html
-          curl --fail --location --retry 8 --retry-delay 3 --retry-all-errors \
-            --output /tmp/sandbox_model.json "${PAGE_URL%/}/data/sandbox_model.json"
+          curl --fail --location --retry 8 --retry-delay 3 --retry-all-errors --output /tmp/sandbox_model.json "${PAGE_URL%/}/data/sandbox_model.json"
           python - <<'PY'
           import json
           from pathlib import Path
-          data = json.loads(Path('/tmp/sandbox_model.json').read_text())
-          if data['meta']['source_main_commit'] != '1a244282d3fc6b84ee9df5c62ee32efe3c03ec24':
-              raise SystemExit('hosted sandbox model source checkpoint mismatch')
-          if data['defaults']['prop_configuration_id'] != 'phase2_reference':
-              raise SystemExit('hosted sandbox default prop configuration changed')
-          if len(data['propulsion']['configurations']) != 3:
-              raise SystemExit('hosted sandbox propeller reference set incomplete')
+          data=json.loads(Path('/tmp/sandbox_model.json').read_text())
+          if data['meta']['source_main_commit'] != '1a244282d3fc6b84ee9df5c62ee32efe3c03ec24': raise SystemExit('hosted sandbox model source checkpoint mismatch')
+          if data['defaults']['prop_configuration_id'] != 'phase2_reference': raise SystemExit('hosted sandbox default prop changed')
+          if len(data['propulsion']['configurations']) != 3: raise SystemExit('hosted sandbox prop set incomplete')
           print('HOSTED SANDBOX VERIFIED')
           PY

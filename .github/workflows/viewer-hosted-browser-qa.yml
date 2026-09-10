@@ -3,11 +3,13 @@ name: Hosted viewer browser QA
 on:
   pull_request:
     paths:
+      - 'viewer/**'
       - 'scripts/qa_viewer_playwright.mjs'
       - '.github/workflows/viewer-hosted-browser-qa.yml'
   push:
     branches: [main]
     paths:
+      - 'viewer/**'
       - 'scripts/qa_viewer_playwright.mjs'
       - '.github/workflows/viewer-hosted-browser-qa.yml'
   workflow_run:
