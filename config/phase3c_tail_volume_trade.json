@@ -1,0 +1,70 @@
+{
+  "status": "PHASE 3C LONGITUDINAL STABILITY VALIDATION / TAIL-VOLUME TRADE / NOT FOR CONSTRUCTION OR FLIGHT CLEARANCE",
+  "source_main_sha": "5b9a179b2237c195c8f41b47f066ea4068b83b6d",
+  "source_phase3b_head": "957ff37fcf998943a83cd357153b2ac17a8dbfbb",
+  "source_phase3b_validation_run": 34503773696,
+  "toolchain": {
+    "openvsp_version": "3.51.3",
+    "platform": "Ubuntu-24.04_amd64",
+    "package_url": "https://openvsp.org/zips/current/linux/OpenVSP-3.51.3-Ubuntu-24.04_amd64.deb"
+  },
+  "reference_tail_planform": {
+    "aspect_ratio": 3.5,
+    "taper_ratio": 0.70,
+    "incidence_deg": 0.0,
+    "dihedral_deg": 0.0,
+    "leading_edge_sweep_deg": 0.0,
+    "vertical_position_m": 0.0,
+    "section": "symmetric thin VLM"
+  },
+  "sanity_cases": {
+    "wing_only": true,
+    "phase3b_reference": {"tail_area_m2": 1.77, "tail_ac_x_m": 8.85},
+    "cg_offset_fraction_mac": [-0.10, 0.10],
+    "fine_mesh": {
+      "wing_section_tess_u": 24,
+      "wing_tess_w": 65,
+      "tail_section_tess_u": 26,
+      "tail_tess_w": 55
+    }
+  },
+  "trade_grid": {
+    "tail_area_m2": [0.40, 0.60, 0.80, 1.00, 1.20],
+    "tail_ac_x_m": [7.00, 8.00, 8.85]
+  },
+  "analysis": {
+    "method": "VORTEX_LATTICE",
+    "mach": 0.03,
+    "alpha_start_deg": -2.0,
+    "alpha_end_deg": 6.0,
+    "alpha_points": 5,
+    "reference_speed_m_s": 9.5,
+    "reference_density_kg_m3": 1.225
+  },
+  "design_review": {
+    "provisional_static_margin_review_band_fraction_mac": [0.08, 0.20],
+    "note": "This is a screening target only. It is not a flight-safety or certification limit and is not itself an acceptance gate."
+  },
+  "validation": {
+    "geometry_relative_tolerance": 0.003,
+    "phase3b_reference_static_margin": 0.38247346439478697,
+    "phase3b_reference_neutral_point_x_m": 3.1978259634644,
+    "reference_static_margin_absolute_tolerance": 0.010,
+    "reference_neutral_point_tolerance_m": 0.010,
+    "neutral_point_cg_invariance_tolerance_fraction_mac": 0.010,
+    "cg_shift_static_margin_tolerance": 0.010,
+    "mesh_static_margin_absolute_tolerance": 0.020,
+    "mesh_neutral_point_tolerance_fraction_mac": 0.020,
+    "minimum_grid_static_margin_fraction_mac": -0.10,
+    "maximum_grid_static_margin_fraction_mac": 0.55,
+    "require_positive_lift_curve_slope": true
+  },
+  "boundary": [
+    "Phase 3C first validates the Phase 3B static-margin magnitude and moment-reference convention before using it for sizing.",
+    "The tail-volume grid varies only horizontal-tail area and aerodynamic-center station using the lowest-static-margin Phase 3B planform family member as a comparison shape.",
+    "No Phase 3C case is promoted to config/he1_baseline.json by this analysis.",
+    "The 8-20% MAC range is a provisional design-review band, not an airworthiness or flight-test acceptance criterion.",
+    "The model remains main wing plus horizontal tail only; fuselage, vertical tail, elevator, propeller slipstream, viscous profile drag, aeroelastic deformation and structural effects remain excluded.",
+    "Trim and elevator authority must be analyzed after a longitudinal stability region is identified."
+  ]
+}
