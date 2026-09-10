@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import math
 from pathlib import Path
@@ -50,9 +51,16 @@ def station_visual(station: dict) -> dict:
     }
 
 
+def normalized_for_check(value: dict) -> dict:
+    value = copy.deepcopy(value)
+    # Human-readable assembly time is metadata only; every engineering source SHA/run is compared.
+    value.get("meta", {}).pop("generated_utc", None)
+    return value
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--check", action="store_true", help="fail if tracked output differs from regenerated output")
+    parser.add_argument("--check", action="store_true", help="fail if tracked output differs from regenerated engineering content")
     args = parser.parse_args()
 
     baseline = load(BASELINE)
@@ -120,11 +128,12 @@ def main() -> None:
         "meta": {
             "project": "Aurora HE-1 3D fidelity model",
             "status": "ENGINEERING VISUALIZATION / NOT FOR CONSTRUCTION OR FLIGHT CLEARANCE",
-            "source_phase3a_main": p3b["source_phase3a_main_sha"],
+            "source_main_before_phase3b": p3b["source_phase3a_main_sha"],
             "source_phase3b_head": evidence["meta"]["phase3b_head"],
-            "source_phase3b_merge": evidence["meta"]["phase3b_merge"],
             "phase3b_validation_run": evidence["meta"]["validation_run"],
+            "generated_utc": evidence["meta"]["validation_completed_utc"],
             "coordinate_frame": "X aft from propeller/nose datum, Y spanwise, Z up relative to aerodynamic reference; ground clearance is a separate local propeller datum",
+            "source_phase3b_merge": evidence["meta"]["phase3b_merge"],
         },
         "authority": {
             "authoritative_or_tracked": [
@@ -147,7 +156,7 @@ def main() -> None:
                 "boom radius",
                 "pilot body geometry",
                 "vertical-tail square area proxy",
-                "propeller longitudinal plane uses propeller/hub mass station as display surrogate",
+                "propeller longitudinal plane at x=0.45 m uses propeller/hub mass station as display surrogate",
                 "landing gear is not geometrically resolved",
             ],
         },
@@ -187,12 +196,12 @@ def main() -> None:
             "baseline": {
                 "diameter_m": float(ref["diameter_m"]),
                 "rpm": float(ref["design_rpm"]),
-                "ground_clearance_m": float(ref["ground_clearance_m"]),
+                "ground_clearance_m": round(float(ref["ground_clearance_m"]), 3),
             },
             "phase2b_numerical_candidate": {
                 "diameter_m": float(selected["diameter_m"]),
                 "rpm": float(selected["design_rpm"]),
-                "ground_clearance_m": float(selected["ground_clearance_m"]),
+                "ground_clearance_m": round(float(selected["ground_clearance_m"]), 3),
                 "promoted": False,
             },
             "shaft_center_height_m": float(prop["shaft_center_height_m"]),
@@ -210,7 +219,7 @@ def main() -> None:
         },
         "visual_envelopes": {
             "pod": {"center_x_m": 2.45, "length_m": 2.4, "width_m": 0.65, "height_m": 0.8, "authority": "visual envelope only; no aerodynamic or structural use"},
-            "boom": {"start_x_m": 3.35, "end_x_m": min(c["root_le_x_m"] for c in candidates), "radius_m": 0.035, "authority": "visual radius only; longitudinal extent follows pod-to-tail connection"},
+            "boom": {"start_x_m": 3.35, "end_x_m": round(min(c["root_le_x_m"] for c in candidates), 2), "radius_m": 0.035, "authority": "visual radius only; longitudinal extent follows pod-to-tail connection"},
             "pilot": {"cg_x_m": pilot_x, "authority": "reference pilot CG x exact; body dimensions visual only"},
         },
         "phase3b_results": {
@@ -223,9 +232,9 @@ def main() -> None:
 
     rendered = json.dumps(out, indent=2, sort_keys=False) + "\n"
     if args.check:
-        current = OUTPUT.read_text() if OUTPUT.exists() else ""
-        if current != rendered:
-            raise SystemExit("VIEWER GEOMETRY GENERATION CHECK FAILED: tracked geometry_fidelity.json is stale; run scripts/generate_viewer_geometry.py")
+        current = load(OUTPUT) if OUTPUT.exists() else {}
+        if normalized_for_check(current) != normalized_for_check(out):
+            raise SystemExit("VIEWER GEOMETRY GENERATION CHECK FAILED: tracked geometry_fidelity.json engineering content is stale; run scripts/generate_viewer_geometry.py")
         print("VIEWER GEOMETRY GENERATION CHECK PASSED")
     else:
         OUTPUT.write_text(rendered)
