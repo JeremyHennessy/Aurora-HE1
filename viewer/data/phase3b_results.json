@@ -1,0 +1,16 @@
+{
+  "meta": {
+    "status": "COMPUTATIONAL EVIDENCE SNAPSHOT / NOT A BASELINE PROMOTION",
+    "phase3b_head": "957ff37fcf998943a83cd357153b2ac17a8dbfbb",
+    "phase3b_merge": "0e8c0b0435373c57595401bf2f89dcf12cb09271",
+    "validation_run": 34503773696,
+    "toolchain": "OpenVSP 3.51.3 / VSPAERO VLM"
+  },
+  "cases": [
+    {"id":"HT35T70","static_margin_fraction_mac":0.38247346439478697,"neutral_point_x_m":3.1978259634644},
+    {"id":"HT45T65","static_margin_fraction_mac":0.4227217223540423,"neutral_point_x_m":3.230620745634904},
+    {"id":"HT55T65","static_margin_fraction_mac":0.45043280172111233,"neutral_point_x_m":3.2532000784465898},
+    {"id":"HT65T55","static_margin_fraction_mac":0.47592847153558704,"neutral_point_x_m":3.2739742679457535},
+    {"id":"HT55T100","static_margin_fraction_mac":0.44005322396849894,"neutral_point_x_m":3.2447426691404937}
+  ]
+}
