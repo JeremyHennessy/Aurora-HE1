@@ -61,17 +61,14 @@ def make_cases(cfg: dict) -> list[dict]:
         if role not in entry["roles"]:
             entry["roles"].append(role)
 
-    # Architecture comparison: full deflection family at the middle elevator span.
     for tid in tails:
         for de in cfg["elevator"]["deflection_deg"]:
             add(tid, 0.85, float(de), 0.23, "architecture")
 
-    # Elevator-span sensitivity on the MID tail. 85% cases above are reused.
     for span in cfg["elevator"]["span_fraction_candidates"]:
         for de in (-10.0, 0.0, 10.0):
             add("MID", float(span), de, 0.23, "span_sensitivity")
 
-    # Direct moment-reference validation with identical neutral elevator geometry.
     for cg in (0.18, 0.28):
         add("MID", 0.85, 0.0, cg, "cg_validation")
 
@@ -99,10 +96,14 @@ def script_for_case(cfg: dict, wing: dict, tail: dict, case: dict) -> str:
     a0, a1 = -4.0, 14.0
     na = 10
 
+    # VSPAERO 7.2.2's control-surface .csf lookup can truncate long generated
+    # identifiers. Keep all aerodynamic entity names deliberately short and
+    # case-independent. Each case runs in a fresh OpenVSP process, so unique
+    # case names are carried by filenames and explicit PHASE3D markers instead.
     L = [
         "void main()", "{", "    VSPCheckSetup();", "    VSPRenew();",
         '    string wing_id = AddGeom("WING", "");',
-        '    SetGeomName(wing_id, "HE1MainWing");',
+        '    SetGeomName(wing_id, "W");',
         '    SetParmVal(wing_id, "RelativeTwistFlag", "WingGeom", 0.0);',
         '    SetParmVal(wing_id, "RelativeDihedralFlag", "WingGeom", 0.0);',
         '    InsertXSec(wing_id, 1, XS_FOUR_SERIES);',
@@ -130,7 +131,7 @@ def script_for_case(cfg: dict, wing: dict, tail: dict, case: dict) -> str:
         '    for (int j = 0; j < GetNumXSec(wing_xsurf); j++) { ChangeXSecShape(wing_xsurf, j, XS_FOUR_SERIES); string xid = GetXSec(wing_xsurf, j); SetParmVal(GetXSecParm(xid, "Camber"), 0.0); SetParmVal(GetXSecParm(xid, "ThickChord"), 0.01); }',
         '    Update();',
         '    string tail_id = AddGeom("WING", "");',
-        f'    SetGeomName(tail_id, "HE1Tail{case["tail_id"]}");',
+        '    SetGeomName(tail_id, "T");',
         '    SetParmVal(tail_id, "RelativeTwistFlag", "WingGeom", 0.0);',
         '    SetParmVal(tail_id, "RelativeDihedralFlag", "WingGeom", 0.0);',
         '    SetDriverGroup(tail_id, 1, AREA_WSECT_DRIVER, ROOTC_WSECT_DRIVER, TIPC_WSECT_DRIVER);',
@@ -147,7 +148,7 @@ def script_for_case(cfg: dict, wing: dict, tail: dict, case: dict) -> str:
         '    for (int j = 0; j < GetNumXSec(tail_xsurf); j++) { ChangeXSecShape(tail_xsurf, j, XS_FOUR_SERIES); string xid = GetXSec(tail_xsurf, j); SetParmVal(GetXSecParm(xid, "Camber"), 0.0); SetParmVal(GetXSecParm(xid, "ThickChord"), 0.01); }',
         '    Update();',
         '    string cs_id = AddSubSurf(tail_id, SS_CONTROL);',
-        f'    SetSubSurfName(cs_id, "Elevator{cid}");',
+        '    SetSubSurfName(cs_id, "E");',
         '    array<string> pids = GetSubSurfParmIDs(cs_id);',
         '    int found_eta_flag=0; int found_eta_start=0; int found_eta_end=0; int found_absrel=0; int found_const=0; int found_lcs=0; int found_lce=0;',
         '    for (uint i=0; i<uint(pids.size()); i++) { string n=GetParmName(pids[i]); if(n=="EtaFlag"){SetParmValUpdate(pids[i],1.0);found_eta_flag=1;} else if(n=="EtaStart"){SetParmValUpdate(pids[i],'+f'{eta_start:.12f}'+');found_eta_start=1;} else if(n=="EtaEnd"){SetParmValUpdate(pids[i],'+f'{eta_end:.12f}'+');found_eta_end=1;} else if(n=="Abs_Rel_Flag"){SetParmValUpdate(pids[i],1.0);found_absrel=1;} else if(n=="SE_Const_Flag"){SetParmValUpdate(pids[i],1.0);found_const=1;} else if(n=="Length_C_Start"){SetParmValUpdate(pids[i],'+f'{chord_fraction:.12f}'+');found_lcs=1;} else if(n=="Length_C_End"){SetParmValUpdate(pids[i],'+f'{chord_fraction:.12f}'+');found_lce=1;} }',
