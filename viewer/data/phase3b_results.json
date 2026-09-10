@@ -4,6 +4,7 @@
     "phase3b_head": "957ff37fcf998943a83cd357153b2ac17a8dbfbb",
     "phase3b_merge": "0e8c0b0435373c57595401bf2f89dcf12cb09271",
     "validation_run": 34503773696,
+    "validation_completed_utc": "2026-09-10T16:46:04Z",
     "toolchain": "OpenVSP 3.51.3 / VSPAERO VLM"
   },
   "cases": [
