@@ -1,0 +1,117 @@
+name: Phase 4A structural loads and bracing demand
+
+on:
+  pull_request:
+    paths:
+      - 'config/he1_baseline.json'
+      - 'config/phase4a_structural_loads.json'
+      - 'src/aurora_he1/geometry.py'
+      - 'scripts/generate_phase4a_openvsp.py'
+      - 'scripts/parse_phase4a_spanload.py'
+      - 'scripts/run_phase4a_structural.py'
+      - 'scripts/check_phase4a.py'
+      - '.github/workflows/phase4a-structural-loads.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'config/he1_baseline.json'
+      - 'config/phase4a_structural_loads.json'
+      - 'src/aurora_he1/geometry.py'
+      - 'scripts/generate_phase4a_openvsp.py'
+      - 'scripts/parse_phase4a_spanload.py'
+      - 'scripts/run_phase4a_structural.py'
+      - 'scripts/check_phase4a.py'
+      - '.github/workflows/phase4a-structural-loads.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  structural-loads:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - name: Check Phase 4A sources
+        run: |
+          python -m py_compile scripts/generate_phase4a_openvsp.py scripts/parse_phase4a_spanload.py scripts/run_phase4a_structural.py scripts/check_phase4a.py
+          python -m json.tool config/phase4a_structural_loads.json >/dev/null
+      - name: Generate current-wing structural load case
+        env:
+          PYTHONPATH: src
+        run: python scripts/generate_phase4a_openvsp.py
+      - name: Install pinned OpenVSP 3.51.3
+        run: |
+          URL=$(python - <<'PY'
+          import json
+          print(json.load(open('config/phase4a_structural_loads.json'))['toolchain']['package_url'])
+          PY
+          )
+          curl --fail --location --retry 5 --retry-delay 3 --output /tmp/openvsp.deb "$URL"
+          sudo apt-get update
+          sudo apt-get install -y desktop-file-utils
+          sudo apt-get install -y /tmp/openvsp.deb
+          VSP_SCRIPT=$(command -v vspscript || true)
+          if [ -z "$VSP_SCRIPT" ]; then
+            VSP_SCRIPT=$(find /usr /opt -type f -name vspscript -perm -111 2>/dev/null | head -n 1)
+          fi
+          test -n "$VSP_SCRIPT"
+          echo "VSP_SCRIPT=$VSP_SCRIPT" >> "$GITHUB_ENV"
+          echo "OpenVSP batch executable: $VSP_SCRIPT"
+      - name: Run current VSPAERO span-load case
+        run: |
+          set +e
+          "$VSP_SCRIPT" -script analysis/phase4a/WING_LOAD.vspscript >analysis/phase4a/WING_LOAD.log 2>&1
+          rc=$?
+          set -e
+          echo "PHASE4A_WRAPPER_RC|${rc}" >> analysis/phase4a/WING_LOAD.log
+          cat analysis/phase4a/WING_LOAD.log
+          if grep -Eq '^[[:space:]]*PHASE4A_(ERROR|API_ERROR)\|' analysis/phase4a/WING_LOAD.log; then
+            echo "explicit Phase 4A solver/API error marker found" >&2
+            exit 1
+          fi
+          grep -q 'PHASE4A_COMPLETE' analysis/phase4a/WING_LOAD.log
+          test -s analysis/phase4a/WING_LOAD.lod
+          test -s analysis/phase4a/WING_LOAD.polar
+          python - <<'PY'
+          from pathlib import Path
+          found=[]
+          for line in Path('analysis/phase4a/WING_LOAD.lod').read_text(errors='replace').splitlines():
+              if line.startswith('AoA_'):
+                  found.append(float(line.split()[1]))
+          for alpha in (4.0, 6.0):
+              if not any(abs(x-alpha) < 1e-6 for x in found):
+                  raise SystemExit(f'missing LOD alpha block {alpha}; found {found}')
+          print('native VSPAERO LOD contains both structural load-shape alpha blocks')
+          PY
+      - name: Parse normalized VSPAERO span-load evidence
+        run: python scripts/parse_phase4a_spanload.py
+      - name: Compute beam and brace demand
+        run: python scripts/run_phase4a_structural.py
+      - name: Validate Phase 4A demand model
+        run: python scripts/check_phase4a.py
+      - name: Preserve Phase 4A evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase4a-structural-loads
+          path: |
+            analysis/phase4a/manifest.json
+            analysis/phase4a/WING_LOAD.vspscript
+            analysis/phase4a/WING_LOAD.vsp3
+            analysis/phase4a/WING_LOAD.log
+            analysis/phase4a/WING_LOAD.polar
+            analysis/phase4a/WING_LOAD.history
+            analysis/phase4a/WING_LOAD.lod
+            analysis/phase4a/WING_LOAD.adb
+            analysis/phase4a/spanload.json
+            analysis/phase4a/spanload.csv
+            analysis/phase4a/structural_results.json
+            analysis/phase4a/joint_loads.csv
+            analysis/phase4a/validation_summary.json
+          if-no-files-found: warn
+          retention-days: 30
