@@ -1,0 +1,74 @@
+{
+  "meta": {
+    "project": "Aurora HE-1 3D fidelity model",
+    "status": "ENGINEERING VISUALIZATION / NOT FOR CONSTRUCTION OR FLIGHT CLEARANCE",
+    "source_main_before_phase3b": "3acd38ffee0665e8b202fbb05559c569c516b2f5",
+    "source_phase3b_head": "957ff37fcf998943a83cd357153b2ac17a8dbfbb",
+    "phase3b_validation_run": 34503773696,
+    "generated_utc": "2026-09-10T18:18:00Z",
+    "coordinate_frame": "X aft from propeller/nose datum, Y spanwise, Z up relative to aerodynamic reference; ground clearance is a separate local propeller datum",
+    "source_phase3b_merge": "0e8c0b0435373c57595401bf2f89dcf12cb09271"
+  },
+  "authority": {
+    "authoritative_or_tracked": [
+      "overall length 10.8 m",
+      "main wing span, area, taper, root leading-edge x, incidence and dihedral",
+      "main wing station twist values",
+      "baseline horizontal and vertical tail areas",
+      "tail aerodynamic-center x = 8.85 m",
+      "baseline mass stations and gross CG",
+      "propeller diameters/RPM values and shaft-center ground-height constraint"
+    ],
+    "computationally_resolved": [
+      "Phase 3A OpenVSP/VSPAERO main-wing geometry convention",
+      "five Phase 3B horizontal-tail planforms holding area and quarter-MAC x fixed",
+      "Phase 3B VLM static margins and neutral-point locations"
+    ],
+    "visual_only": [
+      "50/50 interpolation at unresolved DAE blend stations",
+      "pod/fairing outer envelope",
+      "boom radius",
+      "pilot body geometry",
+      "vertical-tail square area proxy",
+      "propeller longitudinal plane at x=0.45 m uses propeller/hub mass station as display surrogate",
+      "landing gear is not geometrically resolved"
+    ]
+  },
+  "overall_length_m": 10.8,
+  "wing": {
+    "span_m": 23.0,
+    "area_m2": 18.0,
+    "taper_ratio": 0.48,
+    "dihedral_deg": 3.5,
+    "incidence_deg": 1.5,
+    "root_le_x_m": 2.7,
+    "root_chord_m": 1.0575793184488838,
+    "tip_chord_m": 0.5076380728554641,
+    "mean_aerodynamic_chord_m": 0.8148124622860229,
+    "aspect_ratio": 29.38888888888889,
+    "stations": [
+      {"eta":0.0,"profile_a":"DAE11","profile_b":null,"blend_fraction":0.0,"twist_deg":0.0,"authority":"tracked profile"},
+      {"eta":0.25,"profile_a":"DAE11","profile_b":"DAE21","blend_fraction":0.5,"twist_deg":-0.15,"authority":"provisional 50/50 visualization of unresolved blend"},
+      {"eta":0.5,"profile_a":"DAE21","profile_b":null,"blend_fraction":0.0,"twist_deg":-0.35,"authority":"provisional profile assignment"},
+      {"eta":0.75,"profile_a":"DAE31","profile_b":null,"blend_fraction":0.0,"twist_deg":-0.85,"authority":"provisional profile assignment"},
+      {"eta":1.0,"profile_a":"DAE31","profile_b":"DAE41","blend_fraction":0.5,"twist_deg":-1.5,"authority":"provisional 50/50 visualization of unresolved blend"}
+    ]
+  },
+  "horizontal_tail": {
+    "fixed_area_m2":1.77,"fixed_aerodynamic_center_x_m":8.85,"review_band_fraction_mac":[0.08,0.2],"default_display_case":"HT35T70","no_candidate_promoted":true,
+    "candidates":[
+      {"id":"HT35T70","area_m2":1.77,"aspect_ratio":3.5,"taper_ratio":0.7,"span_m":2.4889756929307287,"root_chord_m":0.8366304850187322,"tip_chord_m":0.5856413395131125,"mean_aerodynamic_chord_m":0.7185179459572641,"root_le_x_m":8.670370513510683,"quarter_mac_x_m":8.85,"incidence_deg":0.0,"dihedral_deg":0.0,"leading_edge_sweep_deg":0.0,"vertical_position_m":0.0,"static_margin_fraction_mac":0.38247346439478697,"neutral_point_x_m":3.1978259634644,"inside_review_band":false},
+      {"id":"HT45T65","area_m2":1.77,"aspect_ratio":4.5,"taper_ratio":0.65,"span_m":2.822233158334017,"root_chord_m":0.7601974837263346,"tip_chord_m":0.4941283644221175,"mean_aerodynamic_chord_m":0.6365694080900315,"root_le_x_m":8.690857647977491,"quarter_mac_x_m":8.85,"incidence_deg":0.0,"dihedral_deg":0.0,"leading_edge_sweep_deg":0.0,"vertical_position_m":0.0,"static_margin_fraction_mac":0.4227217223540423,"neutral_point_x_m":3.230620745634904,"inside_review_band":false},
+      {"id":"HT55T65","area_m2":1.77,"aspect_ratio":5.5,"taper_ratio":0.65,"span_m":3.120096152364539,"root_chord_m":0.6876244963888791,"tip_chord_m":0.44695592265277145,"mean_aerodynamic_chord_m":0.5757986944508896,"root_le_x_m":8.706050326387277,"quarter_mac_x_m":8.85,"incidence_deg":0.0,"dihedral_deg":0.0,"leading_edge_sweep_deg":0.0,"vertical_position_m":0.0,"static_margin_fraction_mac":0.45043280172111233,"neutral_point_x_m":3.2532000784465898,"inside_review_band":false},
+      {"id":"HT65T55","area_m2":1.77,"aspect_ratio":6.5,"taper_ratio":0.55,"span_m":3.391902121229326,"root_chord_m":0.673330445901603,"tip_chord_m":0.37033174524588164,"mean_aerodynamic_chord_m":0.5364923230248256,"root_le_x_m":8.715876919243794,"quarter_mac_x_m":8.85,"incidence_deg":0.0,"dihedral_deg":0.0,"leading_edge_sweep_deg":0.0,"vertical_position_m":0.0,"static_margin_fraction_mac":0.47592847153558704,"neutral_point_x_m":3.2739742679457535,"inside_review_band":false},
+      {"id":"HT55T100","area_m2":1.77,"aspect_ratio":5.5,"taper_ratio":1.0,"span_m":3.120096152364539,"root_chord_m":0.5672902095208252,"tip_chord_m":0.5672902095208252,"mean_aerodynamic_chord_m":0.5672902095208252,"root_le_x_m":8.708177447619793,"quarter_mac_x_m":8.85,"incidence_deg":0.0,"dihedral_deg":0.0,"leading_edge_sweep_deg":0.0,"vertical_position_m":0.0,"static_margin_fraction_mac":0.44005322396849894,"neutral_point_x_m":3.2447426691404937,"inside_review_band":false}
+    ]
+  },
+  "vertical_tail":{"area_m2":1.55,"planform_status":"unresolved","visual_proxy":{"shape":"square","side_m":1.2449899597988732,"area_m2":1.55,"authority":"area exact; aspect ratio and location/shape visual only"}},
+  "propeller":{"baseline":{"diameter_m":2.85,"rpm":130.0,"ground_clearance_m":0.325},"phase2b_numerical_candidate":{"diameter_m":2.9,"rpm":150.0,"ground_clearance_m":0.3,"promoted":false},"shaft_center_height_m":1.75,"minimum_target_ground_clearance_m":0.3,"display_plane_x_m":0.45,"display_plane_basis":"propeller_and_hub mass station only; exact shaft x is not yet tracked"},
+  "mass":{"empty_mass_kg":37.5,"reference_pilot_and_personal_gear_kg":72.5,"gross_mass_kg":110.0,"gross_cg_x_m":2.8861818181818184,"reference_pilot_cg_x_m":2.83,"items":[
+    {"name":"wing_primary_structure","mass_kg":9.0,"x_m":2.9},{"name":"wing_secondary_structure_and_covering","mass_kg":5.0,"x_m":2.95},{"name":"wing_bracing","mass_kg":1.2,"x_m":2.8},{"name":"center_structure_and_pod_frame","mass_kg":4.0,"x_m":2.4},{"name":"tail_boom","mass_kg":2.2,"x_m":5.8},{"name":"empennage","mass_kg":1.5,"x_m":8.9},{"name":"flight_controls","mass_kg":0.8,"x_m":4.5},{"name":"mid_drive_crank_and_pedals","mass_kg":3.6,"x_m":1.95},{"name":"final_drive_and_prop_shaft","mass_kg":1.4,"x_m":1.5},{"name":"propeller_and_hub","mass_kg":1.5,"x_m":0.45},{"name":"battery_standard","mass_kg":2.2,"x_m":2.75},{"name":"electrical_system","mass_kg":0.8,"x_m":2.6},{"name":"landing_gear","mass_kg":1.6,"x_m":2.5},{"name":"instrumentation","mass_kg":0.4,"x_m":2.3},{"name":"hardware_adhesives_and_fittings","mass_kg":1.1,"x_m":3.0},{"name":"seat_and_nonstructural_fairing","mass_kg":1.2,"x_m":2.2}
+  ]},
+  "visual_envelopes":{"pod":{"center_x_m":2.45,"length_m":2.4,"width_m":0.65,"height_m":0.8,"authority":"visual envelope only; no aerodynamic or structural use"},"boom":{"start_x_m":3.35,"end_x_m":8.67,"radius_m":0.035,"authority":"visual radius only; longitudinal extent follows pod-to-tail connection"},"pilot":{"cg_x_m":2.83,"authority":"reference pilot CG x exact; body dimensions visual only"}},
+  "phase3b_results":{"case_count":5,"static_margin_range_fraction_mac":[0.38247346439478697,0.47592847153558704],"cases_inside_review_band":[],"interpretation":"All tested fixed-area/fixed-arm tail planforms are much more statically stable than the provisional 8-20% MAC screening band. Planform change alone does not reach the target."}
+}
