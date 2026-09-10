@@ -6,12 +6,16 @@ on:
       - 'viewer/**'
       - 'scripts/check_viewer_snapshot.py'
       - 'scripts/check_sandbox_model.py'
+      - 'scripts/check_viewer_geometry.py'
+      - 'scripts/generate_viewer_geometry.py'
       - '.github/workflows/viewer-validation.yml'
   push:
     paths:
       - 'viewer/**'
       - 'scripts/check_viewer_snapshot.py'
       - 'scripts/check_sandbox_model.py'
+      - 'scripts/check_viewer_geometry.py'
+      - 'scripts/generate_viewer_geometry.py'
       - '.github/workflows/viewer-validation.yml'
   workflow_dispatch:
 
@@ -29,31 +33,44 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: '3.13'
-      - name: Extract and check inline JavaScript modules
+      - name: Check viewer JavaScript modules
         run: |
           python - <<'PY'
           from pathlib import Path
           import re
-          for source, target in [('viewer/index.html', '/tmp/viewer-app.mjs'), ('viewer/sandbox.html', '/tmp/sandbox-app.mjs')]:
+          for source, target in [('viewer/index.html', '/tmp/viewer-loader.mjs'), ('viewer/sandbox.html', '/tmp/sandbox-app.mjs')]:
               html = Path(source).read_text()
               blocks = re.findall(r'<script type="module">(.*?)</script>', html, re.S)
               if len(blocks) != 1:
                   raise SystemExit(f'{source}: expected exactly one inline module script, found {len(blocks)}')
               Path(target).write_text(blocks[0])
           PY
-          node --check /tmp/viewer-app.mjs
+          node --check /tmp/viewer-loader.mjs
+          node --check viewer/app.js
           node --check /tmp/sandbox-app.mjs
       - name: Viewer JSON syntax
         run: |
           python -m json.tool viewer/data/verified_snapshot.json >/dev/null
           python -m json.tool viewer/data/sandbox_model.json >/dev/null
+          python -m json.tool viewer/data/geometry_fidelity.json >/dev/null
+          python -m json.tool viewer/data/wing_profiles.json >/dev/null
+          python -m json.tool viewer/data/phase3b_results.json >/dev/null
       - name: Engineering snapshot gates
         run: python scripts/check_viewer_snapshot.py
       - name: Scenario sandbox consistency gates
         run: python scripts/check_sandbox_model.py
+      - name: Generated Phase 3 geometry freshness
+        run: python scripts/generate_viewer_geometry.py --check
+      - name: Phase 3 viewer geometry gates
+        run: python scripts/check_viewer_geometry.py
       - name: Static asset presence
         run: |
           test -s viewer/index.html
+          test -s viewer/app.js
+          test -s viewer/styles.css
           test -s viewer/sandbox.html
           test -s viewer/data/verified_snapshot.json
           test -s viewer/data/sandbox_model.json
+          test -s viewer/data/geometry_fidelity.json
+          test -s viewer/data/wing_profiles.json
+          test -s viewer/data/phase3b_results.json
