@@ -1,0 +1,87 @@
+name: Phase 3D OpenVSP control-surface probe
+
+on:
+  pull_request:
+    paths:
+      - 'config/phase3d_elevator_trim.json'
+      - 'scripts/generate_phase3d_control_probe.py'
+      - '.github/workflows/phase3d-control-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  control-probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - name: Check probe sources
+        run: |
+          python -m py_compile scripts/generate_phase3d_control_probe.py
+          python -m json.tool config/phase3d_elevator_trim.json >/dev/null
+      - name: Generate control-surface probe
+        run: python scripts/generate_phase3d_control_probe.py
+      - name: Install pinned OpenVSP 3.51.3
+        run: |
+          URL=$(python - <<'PY'
+          import json
+          print(json.load(open('config/phase3d_elevator_trim.json'))['toolchain']['package_url'])
+          PY
+          )
+          curl --fail --location --retry 5 --retry-delay 3 --output /tmp/openvsp.deb "$URL"
+          sudo apt-get update
+          sudo apt-get install -y desktop-file-utils
+          sudo apt-get install -y /tmp/openvsp.deb
+          VSP_SCRIPT=$(command -v vspscript || true)
+          if [ -z "$VSP_SCRIPT" ]; then
+            VSP_SCRIPT=$(find /usr /opt -type f -name vspscript -perm -111 2>/dev/null | head -n 1)
+          fi
+          test -n "$VSP_SCRIPT"
+          echo "VSP_SCRIPT=$VSP_SCRIPT" >> "$GITHUB_ENV"
+      - name: Probe OpenVSP control-surface parameter contract
+        run: |
+          set +e
+          "$VSP_SCRIPT" -script analysis/phase3d_probe/control_probe.vspscript >analysis/phase3d_probe/control_probe.log 2>&1
+          rc=$?
+          set -e
+          echo "PHASE3D_PROBE_WRAPPER_RC|${rc}" >> analysis/phase3d_probe/control_probe.log
+          cat analysis/phase3d_probe/control_probe.log
+          if grep -Eq '^[[:space:]]*PHASE3D_PROBE_(ERROR|API_ERROR)\|' analysis/phase3d_probe/control_probe.log; then
+            echo "explicit Phase 3D probe/API error marker found" >&2
+            exit 1
+          fi
+          grep -q '^PHASE3D_PROBE_COMPLETE$' analysis/phase3d_probe/control_probe.log
+          grep -q '^PHASE3D_PROBE_FOUND|1|1|1|1|1$' analysis/phase3d_probe/control_probe.log
+          test -s analysis/phase3d_probe/control_probe.vsp3
+          python - <<'PY'
+          import re
+          from pathlib import Path
+          text=Path('analysis/phase3d_probe/control_probe.log').read_text(errors='replace')
+          m=re.search(r'^PHASE3D_PROBE_GROUP_COUNT\|(\d+)$', text, re.M)
+          if not m or int(m.group(1)) < 1:
+              raise SystemExit('control surface auto-group was not created')
+          m=re.search(r'^PHASE3D_PROBE_GROUP_VALUES\|([^|]+)\|([^|]+)\|([^\n]+)$', text, re.M)
+          if not m:
+              raise SystemExit('control group values marker missing')
+          vals=[float(x.strip()) for x in m.groups()]
+          if abs(vals[0]-10.0)>1e-9 or abs(vals[1]-1.0)>1e-9 or abs(vals[2]+1.0)>1e-9:
+              raise SystemExit(f'unexpected deflection/gain values: {vals}')
+          print('PHASE 3D CONTROL PROBE CONTRACT PASSED', vals)
+          PY
+      - name: Preserve Phase 3D probe evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase3d-control-probe
+          path: |
+            analysis/phase3d_probe/manifest.json
+            analysis/phase3d_probe/control_probe.vspscript
+            analysis/phase3d_probe/control_probe.vsp3
+            analysis/phase3d_probe/control_probe.log
+          if-no-files-found: warn
+          retention-days: 30
