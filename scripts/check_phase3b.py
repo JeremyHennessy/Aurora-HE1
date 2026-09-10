@@ -36,7 +36,10 @@ def main() -> None:
     summaries = []
     for case in cases:
         cid = case["id"]
-        require(str(case["tool_version"]).startswith(cfg["toolchain"]["openvsp_version"]), f"{cid}: unexpected OpenVSP version {case['tool_version']}")
+        reported_version = str(case["tool_version"]).strip()
+        if reported_version.startswith("OpenVSP "):
+            reported_version = reported_version[len("OpenVSP "):].strip()
+        require(reported_version == str(cfg["toolchain"]["openvsp_version"]).strip(), f"{cid}: unexpected OpenVSP version {case['tool_version']}")
         mg = case["main_geometry"]
         for key in ("span_m", "area_m2", "root_chord_m", "tip_chord_m"):
             require(relerr(float(mg[key]), float(wing[key])) <= tol, f"{cid}: main-wing {key} drifted: {mg[key]} vs {wing[key]}")
