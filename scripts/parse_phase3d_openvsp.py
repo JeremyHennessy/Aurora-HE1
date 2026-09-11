@@ -27,17 +27,26 @@ def parse_log(path: Path, cid: str) -> dict:
     if errors:
         raise SystemExit(f"{cid}: explicit OpenVSP error: {'; '.join(errors)}")
     found=next((x for x in lines if x.startswith(f"PHASE3D_CONTROL_FOUND|{cid}|")),None)
+    geom=next((x for x in lines if x.startswith(f"PHASE3D_CONTROL_GEOM|{cid}|")),None)
     case=next((x for x in lines if x.startswith(f"PHASE3D_CASE|{cid}|")),None)
     complete=f"PHASE3D_COMPLETE|{cid}" in lines
-    if not found or not case or not complete:
+    if not found or not geom or not case or not complete:
         raise SystemExit(f"{cid}: missing required log evidence")
     f=[x.strip() for x in found.split("|")]
     if f[2:] != ["1"]*7:
         raise SystemExit(f"{cid}: control parameter contract incomplete: {f}")
+    g=[x.strip() for x in geom.split("|")]
+    if len(g) != 8:
+        raise SystemExit(f"{cid}: malformed control geometry marker: {g}")
     c=[x.strip() for x in case.split("|")]
     return {
         "tail_id": c[2], "span_fraction": float(c[3]), "chord_fraction": float(c[4]),
         "deflection_deg": float(c[5]), "cg_fraction_mac": float(c[6]), "xcg_m": float(c[7]),
+        "control_geometry": {
+            "requested_eta_start": float(g[2]), "requested_eta_end": float(g[3]),
+            "actual_eta_start": float(g[4]), "actual_eta_end": float(g[5]),
+            "actual_chord_fraction_start": float(g[6]), "actual_chord_fraction_end": float(g[7]),
+        },
     }
 
 
@@ -73,6 +82,13 @@ def fitted(rows: list[dict]) -> dict:
     cma,cm0,r2cm=linear_fit(a_rad,cm)
     cmcl,cmcl0,r2cmcl=linear_fit(cl,cm)
     return {"cl_alpha_per_rad":cla,"cl0":cl0,"cm_alpha_per_rad":cma,"cm0":cm0,"dcm_dcl":cmcl,"cm_at_cl0":cmcl0,"static_margin_fraction_mac":-cmcl,"r2_cl_alpha":r2cl,"r2_cm_alpha":r2cm,"r2_cm_cl":r2cmcl}
+
+
+def fitted_alpha_window(rows: list[dict], alpha_min: float, alpha_max: float) -> dict:
+    selected=[r for r in rows if alpha_min-1e-9 <= float(r["alpha_deg"]) <= alpha_max+1e-9]
+    if len(selected) < 3:
+        raise ValueError(f"insufficient points in alpha window {alpha_min}..{alpha_max}")
+    return fitted(selected)
 
 
 def cm_alpha_at_cl(fit: dict, cl_req: float) -> tuple[float,float]:
@@ -138,11 +154,17 @@ def main() -> None:
             cm_actual,_=cm_alpha_at_cl(actual["fit"],cl_test)
             cg_checks.append({"target_cg_fraction_mac":target,"cl":cl_test,"expected_cm":cm_expected,"actual_cm":cm_actual,"absolute_error":abs(cm_actual-cm_expected)})
 
+    # Phase 3C's stability comparison used its common linear alpha range. Phase 3D
+    # deliberately extends the sweep to 14 deg for trim screening; fitting that
+    # broader curved range biases the apparent static margin. Compare like-for-like
+    # on the shared -2..+6 deg window while retaining the full fit for trim work.
     neutral=[]
     phase3c_sm={x["id"]:float(x["phase3c_static_margin_fraction_mac"]) for x in manifest["tail_candidates"]}
     for tid in phase3c_sm:
         c=next(c for c in cases if c["tail_id"]==tid and abs(c["elevator_span_fraction"]-0.85)<1e-9 and abs(c["deflection_deg"])<1e-9 and abs(c["cg_fraction_mac"]-0.23)<1e-9)
-        neutral.append({"tail_id":tid,"phase3c_static_margin_fraction_mac":phase3c_sm[tid],"phase3d_zero_elevator_static_margin_fraction_mac":c["fit"]["static_margin_fraction_mac"],"absolute_difference":abs(c["fit"]["static_margin_fraction_mac"]-phase3c_sm[tid])})
+        common_fit=fitted_alpha_window(c["points"],-2.0,6.0)
+        sm=common_fit["static_margin_fraction_mac"]
+        neutral.append({"tail_id":tid,"comparison_alpha_deg":[-2.0,6.0],"phase3c_static_margin_fraction_mac":phase3c_sm[tid],"phase3d_zero_elevator_static_margin_fraction_mac":sm,"absolute_difference":abs(sm-phase3c_sm[tid]),"common_window_fit":common_fit})
 
     out={
         "status":manifest["status"],"source_main_sha":manifest["source_main_sha"],"main_wing":wing,
